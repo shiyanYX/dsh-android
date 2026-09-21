@@ -51,6 +51,31 @@ class ConnectionViewModel @Inject constructor(
             return
         }
 
+        // Validate URL scheme: enforce HTTPS for non-localhost addresses
+        val address = state.serverAddress.trim()
+        val uri = try {
+            android.net.Uri.parse(address)
+        } catch (e: Exception) {
+            _uiState.value = state.copy(error = "无效的服务器地址")
+            return
+        }
+
+        val scheme = uri.scheme?.lowercase()
+        val host = uri.host?.lowercase() ?: ""
+
+        if (scheme != "http" && scheme != "https") {
+            _uiState.value = state.copy(error = "服务器地址必须以 http:// 或 https:// 开头")
+            return
+        }
+
+        val isLocalhost = host == "localhost" || host == "127.0.0.1" || host == "::1"
+        if (scheme == "http" && !isLocalhost) {
+            _uiState.value = state.copy(
+                error = "非本地服务器建议使用 HTTPS，HTTP 连接不安全"
+            )
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             val result = repository.login(state.serverAddress, state.username, state.password)

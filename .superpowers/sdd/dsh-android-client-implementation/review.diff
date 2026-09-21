@@ -1,0 +1,5340 @@
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..10cfdbf
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,10 @@
++*.iml
++.gradle
++/local.properties
++/.idea
++.DS_Store
++/build
++/captures
++.externalNativeBuild
++.cxx
++local.properties
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/progress.md b/.superpowers/sdd/dsh-android-client-implementation/progress.md
+new file mode 100644
+index 0000000..80b9ed4
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/progress.md
+@@ -0,0 +1,19 @@
++# SDD ledger — plan: docs/superpowers/plans/2024-09-21-dsh-android-client-implementation.md
++
++## Task Status
++
++Task 1: complete (commits 34c3bee..2acdab9, review clean - concern: build verification not possible due to missing Java/Android SDK)
++Task 2: complete (commits 2acdab9..ff41b3e, review clean)
++Task 3: complete (commits ff41b3e..4dc4b75, review clean)
++Task 4: complete (commits 4dc4b75..e83a02b, review clean)
++Task 5: complete (commits e83a02b..f1d09bd, review clean)
++Task 6: complete (commits f1d09bd..341060d, review clean)
++Task 7: complete (commits 341060d..1381eff, review clean)
++Task 8: complete (commits 1381eff..733e228, review clean)
++Task 9: complete (commits 733e228..87226cb, review clean)
++Task 10: complete (commits 87226cb..e00b179, review clean)
++Task 11: complete (commits e00b179..ba6f5d2, review clean)
++Task 12: complete (commits ba6f5d2..e6f0740, review clean)
++Task 13: complete (commits e6f0740..6e8895d, review clean)
++Task 14: complete (commits 6e8895d..d7f60fa, review clean)
++
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-1-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-1-brief.md
+new file mode 100644
+index 0000000..fd22cbf
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-1-brief.md
+@@ -0,0 +1,83 @@
++# Task 1: Project Scaffolding
++
++## Objective
++Create the Android project structure with all necessary configuration files and dependencies.
++
++## Files to Create
++- `build.gradle.kts` (project-level)
++- `settings.gradle.kts`
++- `gradle.properties`
++- `app/build.gradle.kts`
++- `app/src/main/AndroidManifest.xml`
++- `app/src/main/java/com/dsh/android/DshApplication.kt`
++
++## Requirements
++
++### 1. Project-level build.gradle.kts
++```kotlin
++plugins {
++    id("com.android.application") version "8.2.2" apply false
++    id("org.jetbrains.kotlin.android") version "1.9.22" apply false
++    id("com.google.dagger.hilt.android") version "2.50" apply false
++}
++```
++
++### 2. settings.gradle.kts
++```kotlin
++pluginManagement {
++    repositories {
++        google()
++        mavenCentral()
++        gradlePluginPortal()
++    }
++}
++dependencyResolution {
++    repositories {
++        google()
++        mavenCentral()
++    }
++}
++rootProject.name = "dsh-android"
++include(":app")
++```
++
++### 3. gradle.properties
++```properties
++android.useAndroidX=true
++kotlin.code.style=official
++android.nonTransitiveRClass=true
++```
++
++### 4. app/build.gradle.kts
++- Android application plugin
++- Kotlin Android plugin
++- Hilt plugin
++- Compose BOM 2024.02.00
++- Material 3
++- Navigation Compose
++- OkHttp + Retrofit
++- Hilt + Hilt Navigation Compose
++- DataStore Preferences
++- Kotlin Coroutines
++- Min SDK 26, Target SDK 34
++- Java 17 compatibility
++
++### 5. AndroidManifest.xml
++- INTERNET permission
++- ACCESS_NETWORK_STATE permission
++- Application class reference
++- MainActivity with LAUNCHER intent filter
++
++### 6. DshApplication.kt
++- @HiltAndroidApp annotation
++- Extends Application class
++
++## Verification
++Run: `./gradlew assembleDebug`
++Expected: BUILD SUCCESSFUL
++
++## Commit
++```bash
++git add -A
++git commit -m "feat: scaffold Android project with Compose, Hilt, OkHttp"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-1-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-1-report.md
+new file mode 100644
+index 0000000..fb4a039
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-1-report.md
+@@ -0,0 +1,30 @@
++## Status
++DONE_WITH_CONCERNS
++
++## What was implemented
++- Created project-level build.gradle.kts with Android application, Kotlin, and Hilt plugins
++- Created settings.gradle.kts with plugin management and dependency resolution
++- Created gradle.properties with AndroidX and Kotlin configuration
++- Created app/build.gradle.kts with Compose, Material 3, Navigation, OkHttp, Retrofit, Hilt, DataStore, and Coroutines dependencies
++- Created app/src/main/AndroidManifest.xml with INTERNET and ACCESS_NETWORK_STATE permissions, DshApplication reference, and MainActivity launcher
++- Created app/src/main/java/com/dsh/android/DshApplication.kt with @HiltAndroidApp annotation
++- Created app/src/main/java/com/dsh/android/MainActivity.kt with basic Compose setup
++- Created app/src/main/res/values/strings.xml with app name
++- Created app/src/main/res/values/themes.xml with Material theme
++- Created app/proguard-rules.pro for ProGuard configuration
++- Created .gitignore for Android project
++- Set up Gradle wrapper with gradle-wrapper.jar and gradle-wrapper.properties
++
++## Verification
++- Build result: NOT_VERIFIED (Java/Android SDK not available in environment)
++- The gradle build could not be executed because Java is not installed and sudo is not available to install it
++- All project files are correctly structured and configured according to the brief
++
++## Commits
++- `2acdab9` — feat: scaffold Android project with Compose, Hilt, OkHttp
++- `b4902c7` — fix: correct dependencyResolution to dependencyResolutionManagement in settings.gradle.kts
++
++## Concerns
++- Build verification was not possible due to missing Java/Android SDK in the current environment
++- The project structure follows Android best practices and all required dependencies are included
++- The gradle wrapper is set up to use Gradle 8.5, which is compatible with the specified Android Gradle Plugin 8.2.2
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-10-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-10-brief.md
+new file mode 100644
+index 0000000..57ccf17
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-10-brief.md
+@@ -0,0 +1,130 @@
++# Task 10: Navigation
++
++## Objective
++Create navigation graph and MainActivity for the application.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/ui/navigation/NavGraph.kt`
++- `app/src/main/java/com/dsh/android/MainActivity.kt`
++
++## Requirements
++
++### 1. NavGraph.kt
++```kotlin
++package com.dsh.android.ui.navigation
++
++import androidx.compose.runtime.Composable
++import androidx.navigation.NavHostController
++import androidx.navigation.compose.NavHost
++import androidx.navigation.compose.composable
++import com.dsh.android.ui.chat.ChatScreen
++import com.dsh.android.ui.connection.ConnectionScreen
++import com.dsh.android.ui.sessions.SessionListScreen
++import com.dsh.android.ui.settings.SettingsScreen
++
++sealed class Screen(val route: String) {
++    object Connection : Screen("connection")
++    object Sessions : Screen("sessions")
++    object Chat : Screen("chat/{sessionId}") {
++        fun createRoute(sessionId: String) = "chat/$sessionId"
++    }
++    object Settings : Screen("settings")
++}
++
++@Composable
++fun NavGraph(
++    navController: NavHostController,
++    startDestination: String = Screen.Connection.route
++) {
++    NavHost(
++        navController = navController,
++        startDestination = startDestination
++    ) {
++        composable(Screen.Connection.route) {
++            ConnectionScreen(
++                onConnected = {
++                    navController.navigate(Screen.Sessions.route) {
++                        popUpTo(Screen.Connection.route) { inclusive = true }
++                    }
++                }
++            )
++        }
++
++        composable(Screen.Sessions.route) {
++            SessionListScreen(
++                onSessionClick = { sessionId ->
++                    navController.navigate(Screen.Chat.createRoute(sessionId))
++                },
++                onSettingsClick = {
++                    navController.navigate(Screen.Settings.route)
++                }
++            )
++        }
++
++        composable(Screen.Chat.route) { backStackEntry ->
++            val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
++            ChatScreen(
++                sessionId = sessionId,
++                onBack = { navController.popBackStack() }
++            )
++        }
++
++        composable(Screen.Settings.route) {
++            SettingsScreen(
++                onBack = { navController.popBackStack() },
++                onLogout = {
++                    navController.navigate(Screen.Connection.route) {
++                        popUpTo(0) { inclusive = true }
++                    }
++                }
++            )
++        }
++    }
++}
++```
++
++### 2. MainActivity.kt
++```kotlin
++package com.dsh.android
++
++import android.os.Bundle
++import androidx.activity.ComponentActivity
++import androidx.activity.compose.setContent
++import androidx.activity.enableEdgeToEdge
++import androidx.navigation.compose.rememberNavController
++import com.dsh.android.ui.navigation.NavGraph
++import com.dsh.android.ui.theme.DshAndroidTheme
++import dagger.hilt.android.AndroidEntryPoint
++
++@AndroidEntryPoint
++class MainActivity : ComponentActivity() {
++    override fun onCreate(savedInstanceState: Bundle?) {
++        super.onCreate(savedInstanceState)
++        enableEdgeToEdge()
++        setContent {
++            DshAndroidTheme {
++                val navController = rememberNavController()
++                NavGraph(navController = navController)
++            }
++        }
++    }
++}
++```
++
++## Dependencies
++- Uses Compose Navigation
++- Uses all screen composables (will be created in later tasks)
++- Uses DshAndroidTheme from Task 9
++- Uses Hilt @AndroidEntryPoint annotation
++
++## Verification
++- Verify both files have correct package declarations
++- Verify navigation routes are defined correctly
++- Verify MainActivity uses @AndroidEntryPoint
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/ui/navigation/ \
++        app/src/main/java/com/dsh/android/MainActivity.kt
++git commit -m "feat: add navigation graph and MainActivity"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-10-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-10-report.md
+new file mode 100644
+index 0000000..1f4f2fb
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-10-report.md
+@@ -0,0 +1,20 @@
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/ui/navigation/NavGraph.kt` — Navigation graph with Screen sealed class (Connection, Sessions, Chat, Settings routes) and composable NavHost
++- `app/src/main/java/com/dsh/android/MainActivity.kt` — Updated MainActivity with enableEdgeToEdge(), DshAndroidTheme, NavGraph integration, and @AndroidEntryPoint annotation
++
++## Verification
++- File locations verified: YES
++- Package declarations correct: YES
++- Navigation routes defined: YES (Connection, Sessions, Chat with sessionId param, Settings)
++- MainActivity uses @AndroidEntryPoint: YES
++
++## Commits
++- Commit hash: `e00b1795892d3828e2ecd27657de2192eea2038d`
++- Commit message: `feat: add navigation graph and MainActivity`
++
++## Concerns (if any)
++- MainActivity.kt already existed with placeholder content (MaterialTheme/Surface). It has been updated to the new spec with DshAndroidTheme and navigation.
++- Screen composables (ChatScreen, ConnectionScreen, SessionListScreen, SettingsScreen) are referenced in NavGraph but will be created in later tasks.
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-11-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-11-brief.md
+new file mode 100644
+index 0000000..2f7ba6f
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-11-brief.md
+@@ -0,0 +1,221 @@
++# Task 11: Connection Screen
++
++## Objective
++Create connection screen with login form for DSH server authentication.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/ui/connection/ConnectionViewModel.kt`
++- `app/src/main/java/com/dsh/android/ui/connection/ConnectionScreen.kt`
++
++## Requirements
++
++### 1. ConnectionViewModel.kt
++```kotlin
++package com.dsh.android.ui.connection
++
++import androidx.lifecycle.ViewModel
++import androidx.lifecycle.viewModelScope
++import com.dsh.android.domain.repository.DshRepository
++import dagger.hilt.android.lifecycle.HiltViewModel
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.StateFlow
++import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.launch
++import javax.inject.Inject
++
++data class ConnectionUiState(
++    val serverAddress: String = "",
++    val username: String = "",
++    val password: String = "",
++    val rememberPassword: Boolean = false,
++    val isLoading: Boolean = false,
++    val error: String? = null,
++    val isConnected: Boolean = false
++)
++
++@HiltViewModel
++class ConnectionViewModel @Inject constructor(
++    private val repository: DshRepository
++) : ViewModel() {
++
++    private val _uiState = MutableStateFlow(ConnectionUiState())
++    val uiState: StateFlow<ConnectionUiState> = _uiState.asStateFlow()
++
++    fun onServerAddressChange(address: String) {
++        _uiState.value = _uiState.value.copy(serverAddress = address)
++    }
++
++    fun onUsernameChange(username: String) {
++        _uiState.value = _uiState.value.copy(username = username)
++    }
++
++    fun onPasswordChange(password: String) {
++        _uiState.value = _uiState.value.copy(password = password)
++    }
++
++    fun onRememberPasswordChange(remember: Boolean) {
++        _uiState.value = _uiState.value.copy(rememberPassword = remember)
++    }
++
++    fun connect() {
++        val state = _uiState.value
++        if (state.serverAddress.isBlank() || state.username.isBlank() || state.password.isBlank()) {
++            _uiState.value = state.copy(error = "请填写所有字段")
++            return
++        }
++
++        viewModelScope.launch {
++            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
++            val result = repository.login(state.serverAddress, state.username, state.password)
++            result.fold(
++                onSuccess = {
++                    _uiState.value = _uiState.value.copy(isLoading = false, isConnected = true)
++                },
++                onFailure = { e ->
++                    _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
++                }
++            )
++        }
++    }
++}
++```
++
++### 2. ConnectionScreen.kt
++```kotlin
++package com.dsh.android.ui.connection
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.text.KeyboardOptions
++import androidx.compose.material3.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.text.input.KeyboardType
++import androidx.compose.ui.text.input.PasswordVisualTransformation
++import androidx.compose.ui.unit.dp
++import androidx.hilt.navigation.compose.hiltViewModel
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun ConnectionScreen(
++    onConnected: () -> Unit,
++    viewModel: ConnectionViewModel = hiltViewModel()
++) {
++    val uiState by viewModel.uiState.collectAsState()
++
++    LaunchedEffect(uiState.isConnected) {
++        if (uiState.isConnected) {
++            onConnected()
++        }
++    }
++
++    Scaffold(
++        topBar = {
++            TopAppBar(title = { Text("DSH Client") })
++        }
++    ) { padding ->
++        Column(
++            modifier = Modifier
++                .fillMaxSize()
++                .padding(padding)
++                .padding(24.dp),
++            horizontalAlignment = Alignment.CenterHorizontally,
++            verticalArrangement = Arrangement.Center
++        ) {
++            Text(
++                text = "连接到 DSH 服务器",
++                style = MaterialTheme.typography.headlineMedium
++            )
++
++            Spacer(modifier = Modifier.height(32.dp))
++
++            OutlinedTextField(
++                value = uiState.serverAddress,
++                onValueChange = viewModel::onServerAddressChange,
++                label = { Text("服务器地址") },
++                placeholder = { Text("https://dsh.example.com:3080") },
++                modifier = Modifier.fillMaxWidth(),
++                singleLine = true,
++                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
++            )
++
++            Spacer(modifier = Modifier.height(16.dp))
++
++            OutlinedTextField(
++                value = uiState.username,
++                onValueChange = viewModel::onUsernameChange,
++                label = { Text("用户名") },
++                modifier = Modifier.fillMaxWidth(),
++                singleLine = true
++            )
++
++            Spacer(modifier = Modifier.height(16.dp))
++
++            OutlinedTextField(
++                value = uiState.password,
++                onValueChange = viewModel::onPasswordChange,
++                label = { Text("密码") },
++                modifier = Modifier.fillMaxWidth(),
++                singleLine = true,
++                visualTransformation = PasswordVisualTransformation(),
++                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
++            )
++
++            Spacer(modifier = Modifier.height(8.dp))
++
++            Row(
++                modifier = Modifier.fillMaxWidth(),
++                verticalAlignment = Alignment.CenterVertically
++            ) {
++                Checkbox(
++                    checked = uiState.rememberPassword,
++                    onCheckedChange = viewModel::onRememberPasswordChange
++                )
++                Text("记住密码")
++            }
++
++            Spacer(modifier = Modifier.height(24.dp))
++
++            Button(
++                onClick = viewModel::connect,
++                modifier = Modifier.fillMaxWidth(),
++                enabled = !uiState.isLoading
++            ) {
++                if (uiState.isLoading) {
++                    CircularProgressIndicator(
++                        modifier = Modifier.size(20.dp),
++                        color = MaterialTheme.colorScheme.onPrimary
++                    )
++                } else {
++                    Text("连接")
++                }
++            }
++
++            uiState.error?.let { error ->
++                Spacer(modifier = Modifier.height(16.dp))
++                Text(
++                    text = error,
++                    color = MaterialTheme.colorScheme.error,
++                    style = MaterialTheme.typography.bodyMedium
++                )
++            }
++        }
++    }
++}
++```
++
++## Dependencies
++- Uses `DshRepository` from Task 6
++- Uses Compose Material 3
++- Uses Hilt Navigation Compose
++
++## Verification
++- Verify both files have correct package declarations
++- Verify ViewModel handles all UI state changes
++- Verify Screen composable has all required UI elements
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/ui/connection/
++git commit -m "feat: add connection screen with login form"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-11-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-11-report.md
+new file mode 100644
+index 0000000..be1e881
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-11-report.md
+@@ -0,0 +1,18 @@
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/ui/connection/ConnectionViewModel.kt` — ViewModel with UI state management, form field handlers, and login logic via DshRepository
++- `app/src/main/java/com/dsh/android/ui/connection/ConnectionScreen.kt` — Compose screen with server address, username, password fields, remember password checkbox, connect button with loading state, and error display
++
++## Verification
++- File locations verified: YES
++- Package declarations correct: YES (`com.dsh.android.ui.connection`)
++- ViewModel handles UI state: YES (MutableStateFlow with ConnectionUiState data class)
++- Screen has all UI elements: YES (Scaffold, TopAppBar, 3 OutlinedTextFields, Checkbox, Button with loading indicator, error text)
++
++## Commits
++- `ba6f5d2` — `feat: add connection screen with login form`
++
++## Concerns (if any)
++- None. Files match the brief specification exactly.
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-12-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-12-brief.md
+new file mode 100644
+index 0000000..f0c58c7
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-12-brief.md
+@@ -0,0 +1,263 @@
++# Task 12: Session List Screen
++
++## Objective
++Create session list screen with search and create functionality.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/ui/sessions/SessionListViewModel.kt`
++- `app/src/main/java/com/dsh/android/ui/sessions/SessionListScreen.kt`
++
++## Requirements
++
++### 1. SessionListViewModel.kt
++```kotlin
++package com.dsh.android.ui.sessions
++
++import androidx.lifecycle.ViewModel
++import androidx.lifecycle.viewModelScope
++import com.dsh.android.domain.model.Session
++import com.dsh.android.domain.repository.DshRepository
++import dagger.hilt.android.lifecycle.HiltViewModel
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.StateFlow
++import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.launch
++import javax.inject.Inject
++
++data class SessionListUiState(
++    val sessions: List<Session> = emptyList(),
++    val isLoading: Boolean = false,
++    val error: String? = null,
++    val searchQuery: String = ""
++)
++
++@HiltViewModel
++class SessionListViewModel @Inject constructor(
++    private val repository: DshRepository
++) : ViewModel() {
++
++    private val _uiState = MutableStateFlow(SessionListUiState())
++    val uiState: StateFlow<SessionListUiState> = _uiState.asStateFlow()
++
++    init {
++        loadSessions()
++    }
++
++    fun loadSessions() {
++        viewModelScope.launch {
++            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
++            val result = repository.getSessions()
++            result.fold(
++                onSuccess = { sessions ->
++                    _uiState.value = _uiState.value.copy(sessions = sessions, isLoading = false)
++                },
++                onFailure = { e ->
++                    _uiState.value = _uiState.value.copy(error = e.message, isLoading = false)
++                }
++            )
++        }
++    }
++
++    fun onSearchQueryChange(query: String) {
++        _uiState.value = _uiState.value.copy(searchQuery = query)
++        if (query.isBlank()) {
++            loadSessions()
++        } else {
++            searchSessions(query)
++        }
++    }
++
++    private fun searchSessions(query: String) {
++        viewModelScope.launch {
++            val result = repository.searchSessions(query)
++            result.fold(
++                onSuccess = { sessions ->
++                    _uiState.value = _uiState.value.copy(sessions = sessions)
++                },
++                onFailure = { /* Ignore search errors */ }
++            )
++        }
++    }
++
++    fun createSession() {
++        viewModelScope.launch {
++            val result = repository.createSession("New Session")
++            result.fold(
++                onSuccess = { loadSessions() },
++                onFailure = { e ->
++                    _uiState.value = _uiState.value.copy(error = e.message)
++                }
++            )
++        }
++    }
++
++    fun deleteSession(sessionId: String) {
++        viewModelScope.launch {
++            val result = repository.deleteSession(sessionId)
++            result.fold(
++                onSuccess = { loadSessions() },
++                onFailure = { e ->
++                    _uiState.value = _uiState.value.copy(error = e.message)
++                }
++            )
++        }
++    }
++}
++```
++
++### 2. SessionListScreen.kt
++```kotlin
++package com.dsh.android.ui.sessions
++
++import androidx.compose.foundation.clickable
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.lazy.LazyColumn
++import androidx.compose.foundation.lazy.items
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.Add
++import androidx.compose.material.icons.filled.Search
++import androidx.compose.material.icons.filled.Settings
++import androidx.compose.material3.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import androidx.hilt.navigation.compose.hiltViewModel
++import com.dsh.android.domain.model.Session
++import java.text.SimpleDateFormat
++import java.util.*
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun SessionListScreen(
++    onSessionClick: (String) -> Unit,
++    onSettingsClick: () -> Unit,
++    viewModel: SessionListViewModel = hiltViewModel()
++) {
++    val uiState by viewModel.uiState.collectAsState()
++
++    Scaffold(
++        topBar = {
++            TopAppBar(
++                title = { Text("工作区") },
++                actions = {
++                    IconButton(onClick = onSettingsClick) {
++                        Icon(Icons.Default.Settings, contentDescription = "设置")
++                    }
++                }
++            )
++        },
++        floatingActionButton = {
++            FloatingActionButton(onClick = viewModel::createSession) {
++                Icon(Icons.Default.Add, contentDescription = "新建会话")
++            }
++        }
++    ) { padding ->
++        Column(
++            modifier = Modifier
++                .fillMaxSize()
++                .padding(padding)
++        ) {
++            // Search bar
++            OutlinedTextField(
++                value = uiState.searchQuery,
++                onValueChange = viewModel::onSearchQueryChange,
++                label = { Text("搜索会话...") },
++                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
++                modifier = Modifier
++                    .fillMaxWidth()
++                    .padding(horizontal = 16.dp, vertical = 8.dp),
++                singleLine = true
++            )
++
++            when {
++                uiState.isLoading -> {
++                    Box(
++                        modifier = Modifier.fillMaxSize(),
++                        contentAlignment = Alignment.Center
++                    ) {
++                        CircularProgressIndicator()
++                    }
++                }
++                uiState.sessions.isEmpty() -> {
++                    Box(
++                        modifier = Modifier.fillMaxSize(),
++                        contentAlignment = Alignment.Center
++                    ) {
++                        Text("暂无会话", style = MaterialTheme.typography.bodyLarge)
++                    }
++                }
++                else -> {
++                    LazyColumn(
++                        modifier = Modifier.fillMaxSize(),
++                        contentPadding = PaddingValues(16.dp),
++                        verticalArrangement = Arrangement.spacedBy(8.dp)
++                    ) {
++                        items(uiState.sessions) { session ->
++                            SessionItem(
++                                session = session,
++                                onClick = { onSessionClick(session.id) }
++                            )
++                        }
++                    }
++                }
++            }
++        }
++    }
++}
++
++@Composable
++fun SessionItem(
++    session: Session,
++    onClick: () -> Unit
++) {
++    Card(
++        modifier = Modifier
++            .fillMaxWidth()
++            .clickable(onClick = onClick)
++    ) {
++        Column(
++            modifier = Modifier.padding(16.dp)
++        ) {
++            Text(
++                text = session.title,
++                style = MaterialTheme.typography.titleMedium
++            )
++            Spacer(modifier = Modifier.height(4.dp))
++            Text(
++                text = session.model ?: "Unknown model",
++                style = MaterialTheme.typography.bodySmall,
++                color = MaterialTheme.colorScheme.onSurfaceVariant
++            )
++            Spacer(modifier = Modifier.height(4.dp))
++            Text(
++                text = formatDate(session.updatedAt),
++                style = MaterialTheme.typography.bodySmall,
++                color = MaterialTheme.colorScheme.onSurfaceVariant
++            )
++        }
++    }
++}
++
++private fun formatDate(timestamp: Long): String {
++    val sdf = SimpleDateFormat("MM/dd HH:mm", Locale.getDefault())
++    return sdf.format(Date(timestamp))
++}
++```
++
++## Dependencies
++- Uses `DshRepository` from Task 6
++- Uses `Session` model from Task 2
++- Uses Compose Material 3
++- Uses Hilt Navigation Compose
++
++## Verification
++- Verify both files have correct package declarations
++- Verify ViewModel handles session loading, searching, creating, and deleting
++- Verify Screen has search bar, session list, and FAB
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/ui/sessions/
++git commit -m "feat: add session list screen with search and create"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-12-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-12-report.md
+new file mode 100644
+index 0000000..2b8f3ae
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-12-report.md
+@@ -0,0 +1,19 @@
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/ui/sessions/SessionListViewModel.kt`
++- `app/src/main/java/com/dsh/android/ui/sessions/SessionListScreen.kt`
++
++## Verification
++- File locations verified: YES
++- Package declarations correct: YES
++- ViewModel handles session operations: YES
++- Screen has search, list, and FAB: YES
++
++## Commits
++- Commit hash: e6f0740
++- Commit message: feat: add session list screen with search and create
++
++## Concerns (if any)
++- None. Both files were created with exact content from the brief and committed successfully.
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-13-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-13-brief.md
+new file mode 100644
+index 0000000..78d1af4
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-13-brief.md
+@@ -0,0 +1,442 @@
++# Task 13: Chat Screen
++
++## Objective
++Create chat screen with message list, input, and tool call cards.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/ui/chat/ChatViewModel.kt`
++- `app/src/main/java/com/dsh/android/ui/chat/ChatScreen.kt`
++- `app/src/main/java/com/dsh/android/ui/chat/components/MessageBubble.kt`
++- `app/src/main/java/com/dsh/android/ui/chat/components/ToolCallCard.kt`
++- `app/src/main/java/com/dsh/android/ui/chat/components/ChatInput.kt`
++
++## Requirements
++
++### 1. ChatViewModel.kt
++```kotlin
++package com.dsh.android.ui.chat
++
++import androidx.lifecycle.ViewModel
++import androidx.lifecycle.viewModelScope
++import com.dsh.android.domain.model.*
++import com.dsh.android.domain.repository.DshRepository
++import dagger.hilt.android.lifecycle.HiltViewModel
++import kotlinx.coroutines.flow.*
++import kotlinx.coroutines.launch
++import javax.inject.Inject
++
++data class ChatUiState(
++    val messages: List<Message> = emptyList(),
++    val toolCalls: List<ToolCall> = emptyList(),
++    val agentStatus: AgentStatus = AgentStatus.IDLE,
++    val isLoading: Boolean = false,
++    val error: String? = null,
++    val inputText: String = ""
++)
++
++@HiltViewModel
++class ChatViewModel @Inject constructor(
++    private val repository: DshRepository
++) : ViewModel() {
++
++    private val _uiState = MutableStateFlow(ChatUiState())
++    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
++
++    private var currentSessionId: String? = null
++
++    init {
++        observeWebSocketEvents()
++    }
++
++    fun setSession(sessionId: String) {
++        currentSessionId = sessionId
++        repository.connectWebSocket(sessionId)
++    }
++
++    private fun observeWebSocketEvents() {
++        viewModelScope.launch {
++            repository.webSocketEvents.collect { event ->
++                when (event) {
++                    is WebSocketEvent.Connected -> {
++                        _uiState.value = _uiState.value.copy(isLoading = false)
++                    }
++                    is WebSocketEvent.Disconnected -> {
++                        _uiState.value = _uiState.value.copy(error = "连接断开")
++                    }
++                    is WebSocketEvent.MessageReceived -> {
++                        val messages = _uiState.value.messages + event.message
++                        _uiState.value = _uiState.value.copy(messages = messages)
++                    }
++                    is WebSocketEvent.ToolCallReceived -> {
++                        val toolCalls = _uiState.value.toolCalls + event.toolCall
++                        _uiState.value = _uiState.value.copy(
++                            toolCalls = toolCalls,
++                            agentStatus = AgentStatus.WAITING_CONFIRMATION
++                        )
++                    }
++                    is WebSocketEvent.AgentStatusChanged -> {
++                        _uiState.value = _uiState.value.copy(agentStatus = event.status)
++                    }
++                    is WebSocketEvent.Error -> {
++                        _uiState.value = _uiState.value.copy(error = event.error.message)
++                    }
++                }
++            }
++        }
++    }
++
++    fun onInputChange(text: String) {
++        _uiState.value = _uiState.value.copy(inputText = text)
++    }
++
++    fun sendMessage() {
++        val text = _uiState.value.inputText.trim()
++        if (text.isBlank() || currentSessionId == null) return
++
++        val userMessage = Message(
++            id = System.currentTimeMillis().toString(),
++            sessionId = currentSessionId!!,
++            role = MessageRole.USER,
++            content = text,
++            timestamp = System.currentTimeMillis()
++        )
++
++        _uiState.value = _uiState.value.copy(
++            messages = _uiState.value.messages + userMessage,
++            inputText = "",
++            agentStatus = AgentStatus.RUNNING
++        )
++
++        viewModelScope.launch {
++            repository.sendMessage(currentSessionId!!, text)
++        }
++    }
++
++    fun confirmToolCall(callId: String, approved: Boolean) {
++        val toolCalls = _uiState.value.toolCalls.map { tc ->
++            if (tc.id == callId) {
++                tc.copy(status = if (approved) ToolCallStatus.APPROVED else ToolCallStatus.REJECTED)
++            } else {
++                tc
++            }
++        }
++        _uiState.value = _uiState.value.copy(
++            toolCalls = toolCalls,
++            agentStatus = AgentStatus.RUNNING
++        )
++
++        viewModelScope.launch {
++            repository.confirmToolCall(currentSessionId!!, callId, approved)
++        }
++    }
++
++    override fun onCleared() {
++        super.onCleared()
++        repository.disconnectWebSocket()
++    }
++}
++```
++
++### 2. MessageBubble.kt
++```kotlin
++package com.dsh.android.ui.chat.components
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.Surface
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import com.dsh.android.domain.model.Message
++import com.dsh.android.domain.model.MessageRole
++
++@Composable
++fun MessageBubble(
++    message: Message,
++    modifier: Modifier = Modifier
++) {
++    val isUser = message.role == MessageRole.USER
++
++    Row(
++        modifier = modifier.fillMaxWidth(),
++        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
++    ) {
++        Surface(
++            shape = RoundedCornerShape(
++                topStart = 16.dp,
++                topEnd = 16.dp,
++                bottomStart = if (isUser) 16.dp else 4.dp,
++                bottomEnd = if (isUser) 4.dp else 16.dp
++            ),
++            color = if (isUser) {
++                MaterialTheme.colorScheme.primary
++            } else {
++                MaterialTheme.colorScheme.surfaceVariant
++            },
++            modifier = Modifier.widthIn(max = 300.dp)
++        ) {
++            Text(
++                text = message.content,
++                modifier = Modifier.padding(12.dp),
++                color = if (isUser) {
++                    MaterialTheme.colorScheme.onPrimary
++                } else {
++                    MaterialTheme.colorScheme.onSurfaceVariant
++                },
++                style = MaterialTheme.typography.bodyMedium
++            )
++        }
++    }
++}
++```
++
++### 3. ToolCallCard.kt
++```kotlin
++package com.dsh.android.ui.chat.components
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.material3.*
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import com.dsh.android.domain.model.ToolCall
++import com.dsh.android.domain.model.ToolCallStatus
++
++@Composable
++fun ToolCallCard(
++    toolCall: ToolCall,
++    onApprove: () -> Unit,
++    onReject: () -> Unit,
++    modifier: Modifier = Modifier
++) {
++    Card(
++        modifier = modifier.fillMaxWidth(),
++        colors = CardDefaults.cardColors(
++            containerColor = MaterialTheme.colorScheme.secondaryContainer
++        )
++    ) {
++        Column(
++            modifier = Modifier.padding(16.dp)
++        ) {
++            Row(
++                modifier = Modifier.fillMaxWidth(),
++                horizontalArrangement = Arrangement.SpaceBetween
++            ) {
++                Text(
++                    text = "🔧 ${toolCall.toolName}",
++                    style = MaterialTheme.typography.titleSmall
++                )
++                Text(
++                    text = when (toolCall.status) {
++                        ToolCallStatus.PENDING -> "待确认"
++                        ToolCallStatus.APPROVED -> "已允许"
++                        ToolCallStatus.REJECTED -> "已拒绝"
++                        ToolCallStatus.COMPLETED -> "已完成"
++                        ToolCallStatus.ERROR -> "错误"
++                    },
++                    style = MaterialTheme.typography.bodySmall,
++                    color = MaterialTheme.colorScheme.onSurfaceVariant
++                )
++            }
++
++            Spacer(modifier = Modifier.height(8.dp))
++
++            // Show tool arguments
++            Text(
++                text = toolCall.args.toString(),
++                style = MaterialTheme.typography.bodySmall,
++                color = MaterialTheme.colorScheme.onSurfaceVariant
++            )
++
++            if (toolCall.status == ToolCallStatus.PENDING) {
++                Spacer(modifier = Modifier.height(12.dp))
++                Row(
++                    modifier = Modifier.fillMaxWidth(),
++                    horizontalArrangement = Arrangement.End
++                ) {
++                    OutlinedButton(
++                        onClick = onReject,
++                        modifier = Modifier.padding(end = 8.dp)
++                    ) {
++                        Text("拒绝")
++                    }
++                    Button(onClick = onApprove) {
++                        Text("允许")
++                    }
++                }
++            }
++        }
++    }
++}
++```
++
++### 4. ChatInput.kt
++```kotlin
++package com.dsh.android.ui.chat.components
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.Send
++import androidx.compose.material3.*
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++
++@Composable
++fun ChatInput(
++    value: String,
++    onValueChange: (String) -> Unit,
++    onSend: () -> Unit,
++    modifier: Modifier = Modifier
++) {
++    Surface(
++        modifier = modifier,
++        tonalElevation = 3.dp
++    ) {
++        Row(
++            modifier = Modifier
++                .padding(8.dp)
++                .fillMaxWidth()
++        ) {
++            OutlinedTextField(
++                value = value,
++                onValueChange = onValueChange,
++                modifier = Modifier.weight(1f),
++                placeholder = { Text("输入消息...") },
++                maxLines = 4
++            )
++            Spacer(modifier = Modifier.width(8.dp))
++            IconButton(
++                onClick = onSend,
++                enabled = value.isNotBlank()
++            ) {
++                Icon(
++                    Icons.Default.Send,
++                    contentDescription = "发送",
++                    tint = if (value.isNotBlank()) {
++                        MaterialTheme.colorScheme.primary
++                    } else {
++                        MaterialTheme.colorScheme.onSurfaceVariant
++                    }
++                )
++            }
++        }
++    }
++}
++```
++
++### 5. ChatScreen.kt
++```kotlin
++package com.dsh.android.ui.chat
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.lazy.LazyColumn
++import androidx.compose.foundation.lazy.items
++import androidx.compose.foundation.lazy.rememberLazyListState
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.ArrowBack
++import androidx.compose.material3.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import androidx.hilt.navigation.compose.hiltViewModel
++import com.dsh.android.domain.model.AgentStatus
++import com.dsh.android.ui.chat.components.ChatInput
++import com.dsh.android.ui.chat.components.MessageBubble
++import com.dsh.android.ui.chat.components.ToolCallCard
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun ChatScreen(
++    sessionId: String,
++    onBack: () -> Unit,
++    viewModel: ChatViewModel = hiltViewModel()
++) {
++    val uiState by viewModel.uiState.collectAsState()
++    val listState = rememberLazyListState()
++
++    LaunchedEffect(sessionId) {
++        viewModel.setSession(sessionId)
++    }
++
++    // Auto-scroll to bottom when new messages arrive
++    LaunchedEffect(uiState.messages.size) {
++        if (uiState.messages.isNotEmpty()) {
++            listState.animateScrollToItem(uiState.messages.size - 1)
++        }
++    }
++
++    Scaffold(
++        topBar = {
++            TopAppBar(
++                title = { Text("会话") },
++                navigationIcon = {
++                    IconButton(onClick = onBack) {
++                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
++                    }
++                },
++                actions = {
++                    // Agent status indicator
++                    if (uiState.agentStatus == AgentStatus.RUNNING) {
++                        CircularProgressIndicator(
++                            modifier = Modifier
++                                .size(20.dp)
++                                .padding(end = 8.dp)
++                        )
++                    }
++                }
++            )
++        },
++        bottomBar = {
++            ChatInput(
++                value = uiState.inputText,
++                onValueChange = viewModel::onInputChange,
++                onSend = viewModel::sendMessage
++            )
++        }
++    ) { padding ->
++        LazyColumn(
++            state = listState,
++            modifier = Modifier
++                .fillMaxSize()
++                .padding(padding)
++                .padding(horizontal = 16.dp),
++            verticalArrangement = Arrangement.spacedBy(8.dp),
++            contentPadding = PaddingValues(vertical = 8.dp)
++        ) {
++            // Tool calls
++            items(uiState.toolCalls) { toolCall ->
++                ToolCallCard(
++                    toolCall = toolCall,
++                    onApprove = { viewModel.confirmToolCall(toolCall.id, true) },
++                    onReject = { viewModel.confirmToolCall(toolCall.id, false) }
++                )
++            }
++
++            // Messages
++            items(uiState.messages) { message ->
++                MessageBubble(message = message)
++            }
++        }
++    }
++}
++```
++
++## Dependencies
++- Uses `DshRepository` from Task 6
++- Uses domain models from Task 2: `Message`, `ToolCall`, `WebSocketEvent`, `AgentStatus`, `MessageRole`, `ToolCallStatus`
++- Uses Compose Material 3
++- Uses Hilt Navigation Compose
++
++## Verification
++- Verify all files have correct package declarations
++- Verify ViewModel handles WebSocket events, messages, and tool calls
++- Verify all UI components are correctly implemented
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/ui/chat/
++git commit -m "feat: add chat screen with message bubbles and tool call cards"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-13-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-13-report.md
+new file mode 100644
+index 0000000..8027f45
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-13-report.md
+@@ -0,0 +1,21 @@
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/ui/chat/ChatViewModel.kt` — ViewModel with WebSocket event observation, message sending, tool call confirmation
++- `app/src/main/java/com/dsh/android/ui/chat/ChatScreen.kt` — Main chat screen composable with Scaffold, LazyColumn, and auto-scroll
++- `app/src/main/java/com/dsh/android/ui/chat/components/MessageBubble.kt` — Message bubble with user/assistant styling and rounded corners
++- `app/src/main/java/com/dsh/android/ui/chat/components/ToolCallCard.kt` — Tool call card with status display and approve/reject buttons
++- `app/src/main/java/com/dsh/android/ui/chat/components/ChatInput.kt` — Input bar with text field and send button
++
++## Verification
++- File locations verified: YES
++- Package declarations correct: YES
++- ViewModel handles WebSocket events: YES
++- UI components implemented: YES
++
++## Commits
++- `6e8895d` — `feat: add chat screen with message bubbles and tool call cards`
++
++## Concerns (if any)
++- None
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-14-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-14-brief.md
+new file mode 100644
+index 0000000..31a30ed
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-14-brief.md
+@@ -0,0 +1,198 @@
++# Task 14: Settings Screen
++
++## Objective
++Create settings screen with server info and logout functionality.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/ui/settings/SettingsViewModel.kt`
++- `app/src/main/java/com/dsh/android/ui/settings/SettingsScreen.kt`
++
++## Requirements
++
++### 1. SettingsViewModel.kt
++```kotlin
++package com.dsh.android.ui.settings
++
++import androidx.lifecycle.ViewModel
++import androidx.lifecycle.viewModelScope
++import com.dsh.android.data.local.DshPreferences
++import com.dsh.android.domain.repository.DshRepository
++import dagger.hilt.android.lifecycle.HiltViewModel
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.StateFlow
++import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.flow.first
++import kotlinx.coroutines.launch
++import javax.inject.Inject
++
++data class SettingsUiState(
++    val serverAddress: String = "",
++    val username: String = "",
++    val isConnected: Boolean = false
++)
++
++@HiltViewModel
++class SettingsViewModel @Inject constructor(
++    private val repository: DshRepository,
++    private val preferences: DshPreferences
++) : ViewModel() {
++
++    private val _uiState = MutableStateFlow(SettingsUiState())
++    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
++
++    init {
++        loadSettings()
++    }
++
++    private fun loadSettings() {
++        viewModelScope.launch {
++            val serverAddress = preferences.serverAddress.first() ?: ""
++            val username = preferences.username.first() ?: ""
++            val isConnected = repository.isConnected.first()
++            _uiState.value = SettingsUiState(
++                serverAddress = serverAddress,
++                username = username,
++                isConnected = isConnected
++            )
++        }
++    }
++
++    fun logout() {
++        viewModelScope.launch {
++            repository.logout()
++            _uiState.value = _uiState.value.copy(isConnected = false)
++        }
++    }
++}
++```
++
++### 2. SettingsScreen.kt
++```kotlin
++package com.dsh.android.ui.settings
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.ArrowBack
++import androidx.compose.material.icons.filled.Logout
++import androidx.compose.material3.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import androidx.hilt.navigation.compose.hiltViewModel
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun SettingsScreen(
++    onBack: () -> Unit,
++    onLogout: () -> Unit,
++    viewModel: SettingsViewModel = hiltViewModel()
++) {
++    val uiState by viewModel.uiState.collectAsState()
++
++    LaunchedEffect(uiState.isConnected) {
++        if (!uiState.isConnected) {
++            onLogout()
++        }
++    }
++
++    Scaffold(
++        topBar = {
++            TopAppBar(
++                title = { Text("设置") },
++                navigationIcon = {
++                    IconButton(onClick = onBack) {
++                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
++                    }
++                }
++            )
++        }
++    ) { padding ->
++        Column(
++            modifier = Modifier
++                .fillMaxSize()
++                .padding(padding)
++                .padding(16.dp)
++        ) {
++            // Server Settings
++            Text(
++                text = "服务器设置",
++                style = MaterialTheme.typography.titleMedium
++            )
++            Spacer(modifier = Modifier.height(8.dp))
++            OutlinedCard(
++                modifier = Modifier.fillMaxWidth()
++            ) {
++                Column(
++                    modifier = Modifier.padding(16.dp)
++                ) {
++                    Text("地址: ${uiState.serverAddress}")
++                    Spacer(modifier = Modifier.height(4.dp))
++                    Text("用户名: ${uiState.username}")
++                    Spacer(modifier = Modifier.height(4.dp))
++                    Text(
++                        "状态: ${if (uiState.isConnected) "已连接" else "未连接"}",
++                        color = if (uiState.isConnected) {
++                            MaterialTheme.colorScheme.primary
++                        } else {
++                            MaterialTheme.colorScheme.error
++                        }
++                    )
++                }
++            }
++
++            Spacer(modifier = Modifier.height(24.dp))
++
++            // App Settings
++            Text(
++                text = "应用设置",
++                style = MaterialTheme.typography.titleMedium
++            )
++            Spacer(modifier = Modifier.height(8.dp))
++            OutlinedCard(
++                modifier = Modifier.fillMaxWidth()
++            ) {
++                Column(
++                    modifier = Modifier.padding(16.dp)
++                ) {
++                    Text("版本: 1.0.0")
++                }
++            }
++
++            Spacer(modifier = Modifier.height(24.dp))
++
++            // Logout button
++            Button(
++                onClick = viewModel::logout,
++                modifier = Modifier.fillMaxWidth(),
++                colors = ButtonDefaults.buttonColors(
++                    containerColor = MaterialTheme.colorScheme.error
++                )
++            ) {
++                Icon(
++                    Icons.Default.Logout,
++                    contentDescription = null,
++                    modifier = Modifier.padding(end = 8.dp)
++                )
++                Text("退出登录")
++            }
++        }
++    }
++}
++```
++
++## Dependencies
++- Uses `DshRepository` from Task 6
++- Uses `DshPreferences` from Task 5
++- Uses Compose Material 3
++- Uses Hilt Navigation Compose
++
++## Verification
++- Verify both files have correct package declarations
++- Verify ViewModel loads settings and handles logout
++- Verify Screen displays server info and logout button
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/ui/settings/
++git commit -m "feat: add settings screen with server info and logout"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-14-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-14-report.md
+new file mode 100644
+index 0000000..b6673a2
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-14-report.md
+@@ -0,0 +1,19 @@
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/ui/settings/SettingsViewModel.kt`
++- `app/src/main/java/com/dsh/android/ui/settings/SettingsScreen.kt`
++
++## Verification
++- File locations verified: YES
++- Package declarations correct: YES
++- ViewModel loads settings: YES
++- Screen displays server info and logout: YES
++
++## Commits
++- Commit hash: d7f60fa
++- Message: feat: add settings screen with server info and logout
++
++## Concerns (if any)
++- None identified. Both files implemented exactly as specified in the task brief.
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-15-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-15-brief.md
+new file mode 100644
+index 0000000..ce5c49b
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-15-brief.md
+@@ -0,0 +1,54 @@
++# Task 15: Final Integration & Testing
++
++## Objective
++Verify all components work together and create final integration commit.
++
++## Files to Verify/Modify
++- All previously created files
++
++## Requirements
++
++### 1. Verify Project Structure
++- Check all files are in correct locations
++- Verify package declarations are consistent
++- Check import statements are correct
++
++### 2. Verify Dependencies
++- Ensure all dependencies between tasks are satisfied
++- Check that DshWebSocketClient is properly referenced in DshRepositoryImpl
++- Verify Hilt modules provide all required dependencies
++
++### 3. Verify Navigation
++- Check NavGraph references all screens correctly
++- Verify screen navigation routes are consistent
++- Ensure MainActivity uses NavGraph
++
++### 4. Create Final Integration Commit
++- Add all changes
++- Create comprehensive commit message
++
++## Verification Checklist
++
++- [ ] All domain models exist (Session, Message, ToolCall, DshModel, WebSocketEvent)
++- [ ] All API models exist (LoginRequest, LoginResponse, SessionDto, ModelDto, CreateSessionRequest)
++- [ ] DshApi interface defined
++- [ ] AuthInterceptor implemented
++- [ ] DshPreferences implemented
++- [ ] DshRepository interface defined
++- [ ] DshRepositoryImpl implemented
++- [ ] DshWebSocketClient implemented
++- [ ] NetworkModule and AppModule exist
++- [ ] Theme files exist (Color, Theme, Type)
++- [ ] String resources exist
++- [ ] NavGraph defined
++- [ ] MainActivity implemented
++- [ ] ConnectionScreen implemented
++- [ ] SessionListScreen implemented
++- [ ] ChatScreen implemented
++- [ ] SettingsScreen implemented
++
++## Commit
++```bash
++git add -A
++git commit -m "feat: complete DSH Android client v1.0 integration"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-15-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-15-report.md
+new file mode 100644
+index 0000000..cea1d18
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-15-report.md
+@@ -0,0 +1,33 @@
++## Status
++DONE
++
++## Verification Checklist
++- [x] All domain models exist (Session, Message, ToolCall, DshModel, WebSocketEvent)
++- [x] All API models exist (LoginRequest, LoginResponse, SessionDto, ModelDto, CreateSessionRequest)
++- [x] DshApi interface defined
++- [x] AuthInterceptor implemented
++- [x] DshPreferences implemented
++- [x] DshRepository interface defined
++- [x] DshRepositoryImpl implemented
++- [x] DshWebSocketClient implemented
++- [x] NetworkModule and AppModule exist
++- [x] Theme files exist (Color, Theme, Type)
++- [x] String resources exist
++- [x] NavGraph defined
++- [x] MainActivity implemented
++- [x] ConnectionScreen implemented
++- [x] SessionListScreen implemented
++- [x] ChatScreen implemented
++- [x] SettingsScreen implemented
++
++## Issues Found
++No critical issues found. All files are in correct locations with consistent package declarations and imports.
++
++## Commits
++- Integration commit: 7b688be — feat: complete DSH Android client v1.0 integration
++- Report commit: cdc1fa1 — docs: add task 15 final integration report
++
++## Concerns (if any)
++- The Retrofit base URL is set to "http://localhost/" in NetworkModule, which will be overridden by the actual server address at runtime
++- The WebSocket client uses runBlocking for accessing preferences, which may block the main thread if called from the UI thread
++- Consider adding error handling for network connectivity issues in the UI layer
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-2-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-2-brief.md
+new file mode 100644
+index 0000000..3c6fa15
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-2-brief.md
+@@ -0,0 +1,107 @@
++# Task 2: Domain Models
++
++## Objective
++Create domain model data classes used across all layers of the application.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/domain/model/Session.kt`
++- `app/src/main/java/com/dsh/android/domain/model/Message.kt`
++- `app/src/main/java/com/dsh/android/domain/model/ToolCall.kt`
++- `app/src/main/java/com/dsh/android/domain/model/DshModel.kt`
++- `app/src/main/java/com/dsh/android/domain/model/WebSocketEvent.kt`
++
++## Requirements
++
++### 1. Session.kt
++```kotlin
++package com.dsh.android.domain.model
++
++data class Session(
++    val id: String,
++    val title: String,
++    val createdAt: Long,
++    val updatedAt: Long,
++    val model: String? = null
++)
++```
++
++### 2. Message.kt
++```kotlin
++package com.dsh.android.domain.model
++
++data class Message(
++    val id: String,
++    val sessionId: String,
++    val role: MessageRole,
++    val content: String,
++    val timestamp: Long,
++    val toolCalls: List<ToolCall> = emptyList()
++)
++
++enum class MessageRole {
++    USER,
++    ASSISTANT,
++    SYSTEM
++}
++```
++
++### 3. ToolCall.kt
++```kotlin
++package com.dsh.android.domain.model
++
++data class ToolCall(
++    val id: String,
++    val toolName: String,
++    val args: Map<String, Any>,
++    val status: ToolCallStatus = ToolCallStatus.PENDING
++)
++
++enum class ToolCallStatus {
++    PENDING,
++    APPROVED,
++    REJECTED,
++    COMPLETED,
++    ERROR
++}
++```
++
++### 4. DshModel.kt
++```kotlin
++package com.dsh.android.domain.model
++
++data class DshModel(
++    val id: String,
++    val name: String,
++    val isAvailable: Boolean = true
++)
++```
++
++### 5. WebSocketEvent.kt
++```kotlin
++package com.dsh.android.domain.model
++
++sealed class WebSocketEvent {
++    data class Connected(val sessionId: String) : WebSocketEvent()
++    data class Disconnected(val reason: String? = null) : WebSocketEvent()
++    data class MessageReceived(val message: Message) : WebSocketEvent()
++    data class ToolCallReceived(val toolCall: ToolCall) : WebSocketEvent()
++    data class AgentStatusChanged(val status: AgentStatus) : WebSocketEvent()
++    data class Error(val error: Throwable) : WebSocketEvent()
++}
++
++enum class AgentStatus {
++    IDLE,
++    RUNNING,
++    WAITING_CONFIRMATION
++}
++```
++
++## Verification
++- Verify all files compile correctly (if build environment available)
++- Verify all data classes have correct package declarations
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/domain/
++git commit -m "feat: add domain models for Session, Message, ToolCall, Model"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-2-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-2-report.md
+new file mode 100644
+index 0000000..d22f8f8
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-2-report.md
+@@ -0,0 +1,20 @@
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/domain/model/Session.kt` — Session data class (id, title, timestamps, model)
++- `app/src/main/java/com/dsh/android/domain/model/Message.kt` — Message data class + MessageRole enum (USER, ASSISTANT, SYSTEM)
++- `app/src/main/java/com/dsh/android/domain/model/ToolCall.kt` — ToolCall data class + ToolCallStatus enum (PENDING, APPROVED, REJECTED, COMPLETED, ERROR)
++- `app/src/main/java/com/dsh/android/domain/model/DshModel.kt` — DshModel data class (id, name, isAvailable)
++- `app/src/main/java/com/dsh/android/domain/model/WebSocketEvent.kt` — WebSocketEvent sealed class + AgentStatus enum (IDLE, RUNNING, WAITING_CONFIRMATION)
++
++## Verification
++- File locations verified: YES
++- Package declarations correct: YES
++
++## Commits
++- Hash: `ff41b3e`
++- Message: `feat: add domain models for Session, Message, ToolCall, Model`
++
++## Concerns (if any)
++- None. All 5 files created with exact content from the brief.
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-3-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-3-brief.md
+new file mode 100644
+index 0000000..74840df
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-3-brief.md
+@@ -0,0 +1,107 @@
++# Task 3: Network Layer - API Models
++
++## Objective
++Create API DTO (Data Transfer Object) models for network serialization.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/data/remote/model/LoginRequest.kt`
++- `app/src/main/java/com/dsh/android/data/remote/model/LoginResponse.kt`
++- `app/src/main/java/com/dsh/android/data/remote/model/SessionDto.kt`
++- `app/src/main/java/com/dsh/android/data/remote/model/ModelDto.kt`
++- `app/src/main/java/com/dsh/android/data/remote/model/CreateSessionRequest.kt`
++
++## Requirements
++
++### 1. LoginRequest.kt
++```kotlin
++package com.dsh.android.data.remote.model
++
++import com.google.gson.annotations.SerializedName
++
++data class LoginRequest(
++    @SerializedName("username") val username: String,
++    @SerializedName("password") val password: String
++)
++```
++
++### 2. LoginResponse.kt
++```kotlin
++package com.dsh.android.data.remote.model
++
++import com.google.gson.annotations.SerializedName
++
++data class LoginResponse(
++    @SerializedName("ok") val ok: Boolean,
++    @SerializedName("redirect") val redirect: String? = null,
++    @SerializedName("error") val error: String? = null
++)
++```
++
++### 3. SessionDto.kt
++```kotlin
++package com.dsh.android.data.remote.model
++
++import com.dsh.android.domain.model.Session
++import com.google.gson.annotations.SerializedName
++
++data class SessionDto(
++    @SerializedName("id") val id: String,
++    @SerializedName("title") val title: String,
++    @SerializedName("createdAt") val createdAt: Long,
++    @SerializedName("updatedAt") val updatedAt: Long,
++    @SerializedName("model") val model: String?
++) {
++    fun toDomain() = Session(
++        id = id,
++        title = title,
++        createdAt = createdAt,
++        updatedAt = updatedAt,
++        model = model
++    )
++}
++```
++
++### 4. ModelDto.kt
++```kotlin
++package com.dsh.android.data.remote.model
++
++import com.dsh.android.domain.model.DshModel
++import com.google.gson.annotations.SerializedName
++
++data class ModelDto(
++    @SerializedName("id") val id: String,
++    @SerializedName("name") val name: String,
++    @SerializedName("status") val status: String?
++) {
++    fun toDomain() = DshModel(
++        id = id,
++        name = name,
++        isAvailable = status != "unavailable"
++    )
++}
++```
++
++### 5. CreateSessionRequest.kt
++```kotlin
++package com.dsh.android.data.remote.model
++
++import com.google.gson.annotations.SerializedName
++
++data class CreateSessionRequest(
++    @SerializedName("title") val title: String = "New Session"
++)
++```
++
++## Dependencies
++- Uses domain models from Task 2: `Session`, `DshModel`
++- Uses Gson annotations for JSON serialization
++
++## Verification
++- Verify all files have correct package declarations
++- Verify all DTO classes have `toDomain()` conversion methods where needed
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/data/remote/model/
++git commit -m "feat: add API DTO models with Gson serialization"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-3-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-3-report.md
+new file mode 100644
+index 0000000..18c8175
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-3-report.md
+@@ -0,0 +1,20 @@
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/data/remote/model/LoginRequest.kt`
++- `app/src/main/java/com/dsh/android/data/remote/model/LoginResponse.kt`
++- `app/src/main/java/com/dsh/android/data/remote/model/SessionDto.kt`
++- `app/src/main/java/com/dsh/android/data/remote/model/ModelDto.kt`
++- `app/src/main/java/com/dsh/android/data/remote/model/CreateSessionRequest.kt`
++
++## Verification
++- File locations verified: YES
++- Package declarations correct: YES (all 5 files use `package com.dsh.android.data.remote.model`)
++- toDomain() methods present: YES (SessionDto and ModelDto both have toDomain())
++
++## Commits
++- Commit: `4dc4b75` — `feat: add API DTO models with Gson serialization`
++
++## Concerns (if any)
++- None. All files created exactly as specified in the brief.
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-4-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-4-brief.md
+new file mode 100644
+index 0000000..d65b0a9
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-4-brief.md
+@@ -0,0 +1,96 @@
++# Task 4: Network Layer - Retrofit API
++
++## Objective
++Create Retrofit API interface and authentication interceptor for network communication.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/data/remote/DshApi.kt`
++- `app/src/main/java/com/dsh/android/data/remote/AuthInterceptor.kt`
++
++## Requirements
++
++### 1. AuthInterceptor.kt
++```kotlin
++package com.dsh.android.data.remote
++
++import com.dsh.android.data.local.DshPreferences
++import kotlinx.coroutines.flow.first
++import kotlinx.coroutines.runBlocking
++import okhttp3.Interceptor
++import okhttp3.Response
++import javax.inject.Inject
++import javax.inject.Singleton
++
++@Singleton
++class AuthInterceptor @Inject constructor(
++    private val preferences: DshPreferences
++) : Interceptor {
++
++    override fun intercept(chain: Interceptor.Chain): Response {
++        val original = chain.request()
++
++        // Skip auth for login endpoint
++        if (original.url.encodedPath.contains("dsh-webui-auth/login")) {
++            return chain.proceed(original)
++        }
++
++        val sessionToken = runBlocking { preferences.sessionToken.first() }
++
++        return if (sessionToken != null) {
++            val request = original.newBuilder()
++                .addHeader("Cookie", "dsh_wua_session=$sessionToken")
++                .build()
++            chain.proceed(request)
++        } else {
++            chain.proceed(original)
++        }
++    }
++}
++```
++
++### 2. DshApi.kt
++```kotlin
++package com.dsh.android.data.remote
++
++import com.dsh.android.data.remote.model.*
++import retrofit2.http.*
++
++interface DshApi {
++
++    @POST("dsh-webui-auth/login")
++    suspend fun login(@Body request: LoginRequest): LoginResponse
++
++    @GET("api/sessions")
++    suspend fun getSessions(): List<SessionDto>
++
++    @POST("api/sessions")
++    suspend fun createSession(@Body request: CreateSessionRequest): SessionDto
++
++    @DELETE("api/sessions/{id}")
++    suspend fun deleteSession(@Path("id") sessionId: String)
++
++    @GET("api/sessions/search")
++    suspend fun searchSessions(@Query("q") query: String): List<SessionDto>
++
++    @GET("api/models")
++    suspend fun getModels(): List<ModelDto>
++}
++```
++
++## Dependencies
++- Uses API models from Task 3: `LoginRequest`, `LoginResponse`, `SessionDto`, `ModelDto`, `CreateSessionRequest`
++- Uses `DshPreferences` from Task 5 (will be created later)
++- Uses OkHttp Interceptor interface
++- Uses Hilt annotations for dependency injection
++
++## Verification
++- Verify all files have correct package declarations
++- Verify API endpoints match the DSH server API specification
++- Verify AuthInterceptor correctly adds session token to requests
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/data/remote/DshApi.kt \
++        app/src/main/java/com/dsh/android/data/remote/AuthInterceptor.kt
++git commit -m "feat: add Retrofit API interface and auth interceptor"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-4-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-4-report.md
+new file mode 100644
+index 0000000..8992781
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-4-report.md
+@@ -0,0 +1,19 @@
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/data/remote/DshApi.kt` - Retrofit API interface with 6 endpoints (login, getSessions, createSession, deleteSession, searchSessions, getModels)
++- `app/src/main/java/com/dsh/android/data/remote/AuthInterceptor.kt` - OkHttp interceptor that adds session token cookie to requests, skipping auth for the login endpoint
++
++## Verification
++- File locations verified: YES - Both files created in `app/src/main/java/com/dsh/android/data/remote/`
++- Package declarations correct: YES - Both use `package com.dsh.android.data.remote`
++- API endpoints correct: YES - All 6 endpoints match the DSH server API specification (login, sessions CRUD, models)
++
++## Commits
++- Commit hash: `e83a02b`
++- Message: `feat: add Retrofit API interface and auth interceptor`
++
++## Concerns (if any)
++- None. Both files implemented exactly as specified in the task brief.
++- Note: `DshPreferences` (Task 5) is not yet created, but `AuthInterceptor` imports it correctly for future integration.
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-5-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-5-brief.md
+new file mode 100644
+index 0000000..c906ba3
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-5-brief.md
+@@ -0,0 +1,90 @@
++# Task 5: Local Storage
++
++## Objective
++Create DataStore wrapper for session persistence and user preferences.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/data/local/DshPreferences.kt`
++
++## Requirements
++
++### 1. DshPreferences.kt
++```kotlin
++package com.dsh.android.data.local
++
++import android.content.Context
++import androidx.datastore.core.DataStore
++import androidx.datastore.preferences.core.*
++import androidx.datastore.preferences.preferencesDataStore
++import dagger.hilt.android.qualifiers.ApplicationContext
++import kotlinx.coroutines.flow.Flow
++import kotlinx.coroutines.flow.map
++import javax.inject.Inject
++import javax.inject.Singleton
++
++private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "dsh_settings")
++
++@Singleton
++class DshPreferences @Inject constructor(
++    @ApplicationContext private val context: Context
++) {
++    companion object {
++        private val SERVER_ADDRESS = stringPreferencesKey("server_address")
++        private val USERNAME = stringPreferencesKey("username")
++        private val SESSION_TOKEN = stringPreferencesKey("session_token")
++        private val REMEMBER_PASSWORD = booleanPreferencesKey("remember_password")
++        private val PASSWORD = stringPreferencesKey("password")
++    }
++
++    val serverAddress: Flow<String?> = context.dataStore.data.map { it[SERVER_ADDRESS] }
++    val username: Flow<String?> = context.dataStore.data.map { it[USERNAME] }
++    val sessionToken: Flow<String?> = context.dataStore.data.map { it[SESSION_TOKEN] }
++    val rememberPassword: Flow<Boolean> = context.dataStore.data.map { it[REMEMBER_PASSWORD] ?: false }
++    val password: Flow<String?> = context.dataStore.data.map { it[PASSWORD] }
++
++    suspend fun saveServerAddress(address: String) {
++        context.dataStore.edit { it[SERVER_ADDRESS] = address }
++    }
++
++    suspend fun saveCredentials(username: String, password: String, remember: Boolean) {
++        context.dataStore.edit {
++            it[USERNAME] = username
++            it[REMEMBER_PASSWORD] = remember
++            if (remember) {
++                it[PASSWORD] = password
++            } else {
++                it.remove(PASSWORD)
++            }
++        }
++    }
++
++    suspend fun saveSessionToken(token: String) {
++        context.dataStore.edit { it[SESSION_TOKEN] = token }
++    }
++
++    suspend fun clearSession() {
++        context.dataStore.edit { it.remove(SESSION_TOKEN) }
++    }
++
++    suspend fun clearAll() {
++        context.dataStore.edit { it.clear() }
++    }
++}
++```
++
++## Dependencies
++- Uses Android Context (via Hilt @ApplicationContext)
++- Uses Jetpack DataStore Preferences
++- Uses Kotlin Coroutines Flow
++- Uses Hilt annotations for dependency injection
++
++## Verification
++- Verify file has correct package declaration
++- Verify all preference keys are defined
++- Verify all Flow properties and suspend functions are implemented
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/data/local/
++git commit -m "feat: add DataStore preferences for session persistence"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-5-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-5-report.md
+new file mode 100644
+index 0000000..f175772
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-5-report.md
+@@ -0,0 +1,18 @@
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/data/local/DshPreferences.kt` — DataStore preferences wrapper for session persistence and user preferences
++
++## Verification
++- File location verified: YES
++- Package declaration correct: YES (`com.dsh.android.data.local`)
++- All preference keys defined: YES (SERVER_ADDRESS, USERNAME, SESSION_TOKEN, REMEMBER_PASSWORD, PASSWORD)
++- All Flow properties and suspend functions implemented: YES (serverAddress, username, sessionToken, rememberPassword, password, saveServerAddress, saveCredentials, saveSessionToken, clearSession, clearAll)
++
++## Commits
++- Commit hash: `f1d09bd`
++- Message: feat: add DataStore preferences for session persistence
++
++## Concerns (if any)
++- None
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-6-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-6-brief.md
+new file mode 100644
+index 0000000..3a70ed6
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-6-brief.md
+@@ -0,0 +1,180 @@
++# Task 6: Repository Interface & Implementation
++
++## Objective
++Create repository interface and implementation for data access layer.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/domain/repository/DshRepository.kt`
++- `app/src/main/java/com/dsh/android/data/repository/DshRepositoryImpl.kt`
++
++## Requirements
++
++### 1. DshRepository.kt (Interface)
++```kotlin
++package com.dsh.android.domain.repository
++
++import com.dsh.android.domain.model.*
++import kotlinx.coroutines.flow.Flow
++
++interface DshRepository {
++    val isConnected: Flow<Boolean>
++    val webSocketEvents: Flow<WebSocketEvent>
++
++    suspend fun login(serverAddress: String, username: String, password: String): Result<Unit>
++    suspend fun logout()
++    suspend fun getSessions(): Result<List<Session>>
++    suspend fun createSession(title: String): Result<Session>
++    suspend fun deleteSession(sessionId: String): Result<Unit>
++    suspend fun searchSessions(query: String): Result<List<Session>>
++    suspend fun getModels(): Result<List<DshModel>>
++    suspend fun sendMessage(sessionId: String, content: String): Result<Unit>
++    suspend fun confirmToolCall(sessionId: String, callId: String, approved: Boolean): Result<Unit>
++    fun connectWebSocket(sessionId: String)
++    fun disconnectWebSocket()
++}
++```
++
++### 2. DshRepositoryImpl.kt (Implementation)
++```kotlin
++package com.dsh.android.data.repository
++
++import com.dsh.android.data.local.DshPreferences
++import com.dsh.android.data.remote.DshApi
++import com.dsh.android.data.remote.DshWebSocketClient
++import com.dsh.android.data.remote.model.CreateSessionRequest
++import com.dsh.android.data.remote.model.LoginRequest
++import com.dsh.android.domain.model.*
++import com.dsh.android.domain.repository.DshRepository
++import kotlinx.coroutines.flow.Flow
++import kotlinx.coroutines.flow.MutableSharedFlow
++import kotlinx.coroutines.flow.map
++import javax.inject.Inject
++import javax.inject.Singleton
++
++@Singleton
++class DshRepositoryImpl @Inject constructor(
++    private val api: DshApi,
++    private val preferences: DshPreferences,
++    private val wsClient: DshWebSocketClient
++) : DshRepository {
++
++    private val _webSocketEvents = MutableSharedFlow<WebSocketEvent>(replay = 0)
++
++    override val isConnected: Flow<Boolean> = preferences.sessionToken.map { it != null }
++    override val webSocketEvents: Flow<WebSocketEvent> = _webSocketEvents
++
++    override suspend fun login(serverAddress: String, username: String, password: String): Result<Unit> {
++        return try {
++            preferences.saveServerAddress(serverAddress)
++            val response = api.login(LoginRequest(username, password))
++            if (response.ok) {
++                preferences.saveSessionToken("authenticated")
++                preferences.saveCredentials(username, password, true)
++                Result.success(Unit)
++            } else {
++                Result.failure(Exception(response.error ?: "Login failed"))
++            }
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun logout() {
++        preferences.clearSession()
++        wsClient.disconnect()
++    }
++
++    override suspend fun getSessions(): Result<List<Session>> {
++        return try {
++            val sessions = api.getSessions().map { it.toDomain() }
++            Result.success(sessions)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun createSession(title: String): Result<Session> {
++        return try {
++            val session = api.createSession(CreateSessionRequest(title)).toDomain()
++            Result.success(session)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun deleteSession(sessionId: String): Result<Unit> {
++        return try {
++            api.deleteSession(sessionId)
++            Result.success(Unit)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun searchSessions(query: String): Result<List<Session>> {
++        return try {
++            val sessions = api.searchSessions(query).map { it.toDomain() }
++            Result.success(sessions)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun getModels(): Result<List<DshModel>> {
++        return try {
++            val models = api.getModels().map { it.toDomain() }
++            Result.success(models)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun sendMessage(sessionId: String, content: String): Result<Unit> {
++        return try {
++            wsClient.sendMessage(sessionId, content)
++            Result.success(Unit)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun confirmToolCall(sessionId: String, callId: String, approved: Boolean): Result<Unit> {
++        return try {
++            wsClient.confirmToolCall(sessionId, callId, approved)
++            Result.success(Unit)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override fun connectWebSocket(sessionId: String) {
++        wsClient.connect(sessionId) { event ->
++            _webSocketEvents.tryEmit(event)
++        }
++    }
++
++    override fun disconnectWebSocket() {
++        wsClient.disconnect()
++    }
++}
++```
++
++## Dependencies
++- Uses `DshApi` from Task 4
++- Uses `DshPreferences` from Task 5
++- Uses `DshWebSocketClient` from Task 7 (will be created later)
++- Uses domain models from Task 2
++- Uses API models from Task 3
++
++## Verification
++- Verify both files have correct package declarations
++- Verify DshRepository interface defines all required methods
++- Verify DshRepositoryImpl implements all interface methods
++- Verify dependency injection with @Inject constructor
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/domain/repository/ \
++        app/src/main/java/com/dsh/android/data/repository/
++git commit -m "feat: add repository interface and implementation"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-6-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-6-report.md
+new file mode 100644
+index 0000000..eb50bce
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-6-report.md
+@@ -0,0 +1,20 @@
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/domain/repository/DshRepository.kt` — Repository interface defining data access contracts
++- `app/src/main/java/com/dsh/android/data/repository/DshRepositoryImpl.kt` — Repository implementation with API, preferences, and WebSocket client dependencies
++
++## Verification
++- File locations verified: YES
++- Package declarations correct: YES
++- Interface methods defined: YES (11 methods: isConnected, webSocketEvents, login, logout, getSessions, createSession, deleteSession, searchSessions, getModels, sendMessage, confirmToolCall, connectWebSocket, disconnectWebSocket)
++- Implementation methods complete: YES (all 13 override methods present)
++
++## Commits
++- Commit hash: 341060d
++- Commit message: feat: add repository interface and implementation
++
++## Concerns (if any)
++- DshRepositoryImpl depends on DshWebSocketClient from Task 7 (not yet created). The implementation will compile with unresolved references until Task 7 is complete.
++- The `DshPreferences` dependency from Task 5 uses `sessionToken.map { it != null }` which implies sessionToken is a Flow — verify Task 5 implements it correctly.
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-7-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-7-brief.md
+new file mode 100644
+index 0000000..169b167
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-7-brief.md
+@@ -0,0 +1,152 @@
++# Task 7: WebSocket Client
++
++## Objective
++Create WebSocket client for real-time communication with DSH server.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/data/remote/DshWebSocketClient.kt`
++
++## Requirements
++
++### 1. DshWebSocketClient.kt
++```kotlin
++package com.dsh.android.data.remote
++
++import com.dsh.android.data.local.DshPreferences
++import com.dsh.android.domain.model.*
++import com.google.gson.Gson
++import com.google.gson.JsonObject
++import kotlinx.coroutines.flow.first
++import okhttp3.*
++import java.util.concurrent.TimeUnit
++import javax.inject.Inject
++import javax.inject.Singleton
++
++@Singleton
++class DshWebSocketClient @Inject constructor(
++    private val preferences: DshPreferences
++) {
++    private val client = OkHttpClient.Builder()
++        .connectTimeout(30, TimeUnit.SECONDS)
++        .readTimeout(0, TimeUnit.SECONDS) // No timeout for WebSocket
++        .build()
++
++    private var webSocket: WebSocket? = null
++    private val gson = Gson()
++
++    fun connect(sessionId: String, onEvent: (WebSocketEvent) -> Unit) {
++        val serverAddress = runBlocking { preferences.serverAddress.first() }
++        val sessionToken = runBlocking { preferences.sessionToken.first() }
++
++        if (serverAddress == null || sessionToken == null) {
++            onEvent(WebSocketEvent.Error(Exception("Not connected to server")))
++            return
++        }
++
++        val wsUrl = serverAddress.replace("http", "ws") + "/api/remote.mux"
++        val request = Request.Builder()
++            .url(wsUrl)
++            .addHeader("Cookie", "dsh_wua_session=$sessionToken")
++            .build()
++
++        webSocket = client.newWebSocket(request, object : WebSocketListener() {
++            override fun onOpen(webSocket: WebSocket, response: Response) {
++                onEvent(WebSocketEvent.Connected(sessionId))
++            }
++
++            override fun onMessage(webSocket: WebSocket, text: String) {
++                try {
++                    val json = gson.fromJson(text, JsonObject::class.java)
++                    val type = json.get("type")?.asString
++
++                    when (type) {
++                        "assistant/message" -> {
++                            val message = Message(
++                                id = json.get("id")?.asString ?: "",
++                                sessionId = sessionId,
++                                role = MessageRole.ASSISTANT,
++                                content = json.get("content")?.asString ?: "",
++                                timestamp = System.currentTimeMillis()
++                            )
++                            onEvent(WebSocketEvent.MessageReceived(message))
++                        }
++                        "tool/call" -> {
++                            val toolCall = ToolCall(
++                                id = json.get("callId")?.asString ?: "",
++                                toolName = json.get("tool")?.asString ?: "",
++                                args = gson.fromJson(json.get("args"), Map::class.java) as? Map<String, Any> ?: emptyMap()
++                            )
++                            onEvent(WebSocketEvent.ToolCallReceived(toolCall))
++                        }
++                        "agent/status" -> {
++                            val status = when (json.get("status")?.asString) {
++                                "running" -> AgentStatus.RUNNING
++                                "waiting" -> AgentStatus.WAITING_CONFIRMATION
++                                else -> AgentStatus.IDLE
++                            }
++                            onEvent(WebSocketEvent.AgentStatusChanged(status))
++                        }
++                    }
++                } catch (e: Exception) {
++                    onEvent(WebSocketEvent.Error(e))
++                }
++            }
++
++            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
++                webSocket.close(1000, null)
++                onEvent(WebSocketEvent.Disconnected(reason))
++            }
++
++            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
++                onEvent(WebSocketEvent.Error(t))
++            }
++        })
++    }
++
++    fun sendMessage(sessionId: String, content: String) {
++        val message = JsonObject().apply {
++            addProperty("type", "user/message")
++            addProperty("sessionId", sessionId)
++            addProperty("content", content)
++        }
++        webSocket?.send(gson.toJson(message))
++    }
++
++    fun confirmToolCall(sessionId: String, callId: String, approved: Boolean) {
++        val message = JsonObject().apply {
++            addProperty("type", "tool/confirm")
++            addProperty("sessionId", sessionId)
++            addProperty("callId", callId)
++            addProperty("approved", approved)
++        }
++        webSocket?.send(gson.toJson(message))
++    }
++
++    fun disconnect() {
++        webSocket?.close(1000, "Client disconnect")
++        webSocket = null
++    }
++
++    private fun <T> runBlocking(block: suspend () -> T): T {
++        return kotlinx.coroutines.runBlocking { block() }
++    }
++}
++```
++
++## Dependencies
++- Uses `DshPreferences` from Task 5
++- Uses domain models from Task 2: `Message`, `ToolCall`, `WebSocketEvent`, `AgentStatus`, `MessageRole`
++- Uses OkHttp WebSocket
++- Uses Gson for JSON serialization
++
++## Verification
++- Verify file has correct package declaration
++- Verify WebSocket connection handling
++- Verify message parsing for assistant/message, tool/call, agent/status
++- Verify sendMessage and confirmToolCall methods
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/data/remote/DshWebSocketClient.kt
++git commit -m "feat: add WebSocket client for real-time communication"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-7-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-7-report.md
+new file mode 100644
+index 0000000..1857727
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-7-report.md
+@@ -0,0 +1,19 @@
++## Status
++DONE
++
++## What was implemented
++- app/src/main/java/com/dsh/android/data/remote/DshWebSocketClient.kt
++
++## Verification
++- File location verified: YES
++- Package declaration correct: YES
++- WebSocket connection handling: YES
++- Message parsing: YES
++- sendMessage method: YES
++- confirmToolCall method: YES
++
++## Commits
++- 1381eff: feat: add WebSocket client for real-time communication
++
++## Concerns (if any)
++- None
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-8-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-8-brief.md
+new file mode 100644
+index 0000000..3ef30c0
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-8-brief.md
+@@ -0,0 +1,106 @@
++# Task 8: Hilt Dependency Injection
++
++## Objective
++Create Hilt modules for dependency injection setup.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/di/NetworkModule.kt`
++- `app/src/main/java/com/dsh/android/di/AppModule.kt`
++
++## Requirements
++
++### 1. NetworkModule.kt
++```kotlin
++package com.dsh.android.di
++
++import com.dsh.android.data.local.DshPreferences
++import com.dsh.android.data.remote.AuthInterceptor
++import com.dsh.android.data.remote.DshApi
++import dagger.Module
++import dagger.Provides
++import dagger.hilt.InstallIn
++import dagger.hilt.components.SingletonComponent
++import okhttp3.OkHttpClient
++import okhttp3.logging.HttpLoggingInterceptor
++import retrofit2.Retrofit
++import retrofit2.converter.gson.GsonConverterFactory
++import java.util.concurrent.TimeUnit
++import javax.inject.Singleton
++
++@Module
++@InstallIn(SingletonComponent::class)
++object NetworkModule {
++
++    @Provides
++    @Singleton
++    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
++        val logging = HttpLoggingInterceptor().apply {
++            level = HttpLoggingInterceptor.Level.BODY
++        }
++
++        return OkHttpClient.Builder()
++            .addInterceptor(authInterceptor)
++            .addInterceptor(logging)
++            .connectTimeout(30, TimeUnit.SECONDS)
++            .readTimeout(30, TimeUnit.SECONDS)
++            .build()
++    }
++
++    @Provides
++    @Singleton
++    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
++        return Retrofit.Builder()
++            .baseUrl("http://localhost/") // Base URL will be overridden per request
++            .client(okHttpClient)
++            .addConverterFactory(GsonConverterFactory.create())
++            .build()
++    }
++
++    @Provides
++    @Singleton
++    fun provideDshApi(retrofit: Retrofit): DshApi {
++        return retrofit.create(DshApi::class.java)
++    }
++}
++```
++
++### 2. AppModule.kt
++```kotlin
++package com.dsh.android.di
++
++import com.dsh.android.data.repository.DshRepositoryImpl
++import com.dsh.android.domain.repository.DshRepository
++import dagger.Binds
++import dagger.Module
++import dagger.hilt.InstallIn
++import dagger.hilt.components.SingletonComponent
++import javax.inject.Singleton
++
++@Module
++@InstallIn(SingletonComponent::class)
++abstract class AppModule {
++
++    @Binds
++    @Singleton
++    abstract fun bindDshRepository(impl: DshRepositoryImpl): DshRepository
++}
++```
++
++## Dependencies
++- Uses `DshApi` from Task 4
++- Uses `AuthInterceptor` from Task 4
++- Uses `DshPreferences` from Task 5
++- Uses `DshRepositoryImpl` from Task 6
++- Uses `DshRepository` interface from Task 6
++- Uses Hilt annotations
++
++## Verification
++- Verify both files have correct package declarations
++- Verify NetworkModule provides OkHttpClient, Retrofit, and DshApi
++- Verify AppModule binds DshRepository interface to DshRepositoryImpl
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/di/
++git commit -m "feat: add Hilt dependency injection modules"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-8-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-8-report.md
+new file mode 100644
+index 0000000..450b9c6
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-8-report.md
+@@ -0,0 +1,18 @@
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/di/NetworkModule.kt` — Hilt module providing OkHttpClient, Retrofit, and DshApi as singletons
++- `app/src/main/java/com/dsh/android/di/AppModule.kt` — Hilt module binding DshRepository interface to DshRepositoryImpl
++
++## Verification
++- File locations verified: YES
++- Package declarations correct: YES
++- NetworkModule provides: OkHttpClient, Retrofit, DshApi
++- AppModule binds: DshRepository to DshRepositoryImpl
++
++## Commits
++- `733e228` — `feat: add Hilt dependency injection modules`
++
++## Concerns (if any)
++- None. Both files match the brief exactly.
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-9-brief.md b/.superpowers/sdd/dsh-android-client-implementation/task-9-brief.md
+new file mode 100644
+index 0000000..8872ce7
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-9-brief.md
+@@ -0,0 +1,186 @@
++# Task 9: Theme & UI Foundation
++
++## Objective
++Create Material 3 theme and string resources for the application.
++
++## Files to Create
++- `app/src/main/java/com/dsh/android/ui/theme/Color.kt`
++- `app/src/main/java/com/dsh/android/ui/theme/Theme.kt`
++- `app/src/main/java/com/dsh/android/ui/theme/Type.kt`
++- `app/src/main/res/values/strings.xml`
++- `app/src/main/res/values/themes.xml`
++
++## Requirements
++
++### 1. Color.kt
++```kotlin
++package com.dsh.android.ui.theme
++
++import androidx.compose.ui.graphics.Color
++
++val Blue80 = Color(0xFFBBDEFB)
++val BlueGrey80 = Color(0xFFCFD8DC)
++val Teal80 = Color(0xFFB2DFDB)
++
++val Blue40 = Color(0xFF1976D2)
++val BlueGrey40 = Color(0xFF546E7A)
++val Teal40 = Color(0xFF00796B)
++
++val SurfaceDark = Color(0xFF1E1E1E)
++val BackgroundDark = Color(0xFF121212)
++val SurfaceLight = Color(0xFFFAFAFA)
++val BackgroundLight = Color(0xFFF5F5F5)
++```
++
++### 2. Theme.kt
++```kotlin
++package com.dsh.android.ui.theme
++
++import android.app.Activity
++import android.os.Build
++import androidx.compose.foundation.isSystemInDarkTheme
++import androidx.compose.material3.*
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.SideEffect
++import androidx.compose.ui.graphics.toArgb
++import androidx.compose.ui.platform.LocalView
++import androidx.core.view.WindowCompat
++
++private val DarkColorScheme = darkColorScheme(
++    primary = Blue80,
++    secondary = BlueGrey80,
++    tertiary = Teal80,
++    surface = SurfaceDark,
++    background = BackgroundDark
++)
++
++private val LightColorScheme = lightColorScheme(
++    primary = Blue40,
++    secondary = BlueGrey40,
++    tertiary = Teal40,
++    surface = SurfaceLight,
++    background = BackgroundLight
++)
++
++@Composable
++fun DshAndroidTheme(
++    darkTheme: Boolean = isSystemInDarkTheme(),
++    dynamicColor: Boolean = true,
++    content: @Composable () -> Unit
++) {
++    val colorScheme = when {
++        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
++            val context = LocalView.current.context
++            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
++        }
++        darkTheme -> DarkColorScheme
++        else -> LightColorScheme
++    }
++
++    val view = LocalView.current
++    if (!view.isInEditMode) {
++        SideEffect {
++            val window = (view.context as Activity).window
++            window.statusBarColor = colorScheme.primary.toArgb()
++            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
++        }
++    }
++
++    MaterialTheme(
++        colorScheme = colorScheme,
++        typography = Typography,
++        content = content
++    )
++}
++```
++
++### 3. Type.kt
++```kotlin
++package com.dsh.android.ui.theme
++
++import androidx.compose.material3.Typography
++import androidx.compose.ui.text.TextStyle
++import androidx.compose.ui.text.font.FontFamily
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.unit.sp
++
++val Typography = Typography(
++    bodyLarge = TextStyle(
++        fontFamily = FontFamily.Default,
++        fontWeight = FontWeight.Normal,
++        fontSize = 16.sp,
++        lineHeight = 24.sp,
++        letterSpacing = 0.5.sp
++    ),
++    titleLarge = TextStyle(
++        fontFamily = FontFamily.Default,
++        fontWeight = FontWeight.Normal,
++        fontSize = 22.sp,
++        lineHeight = 28.sp,
++        letterSpacing = 0.sp
++    ),
++    labelSmall = TextStyle(
++        fontFamily = FontFamily.Default,
++        fontWeight = FontWeight.Medium,
++        fontSize = 11.sp,
++        lineHeight = 16.sp,
++        letterSpacing = 0.5.sp
++    )
++)
++```
++
++### 4. strings.xml
++```xml
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string name="app_name">DSH Client</string>
++    <string name="connect">连接</string>
++    <string name="server_address">服务器地址</string>
++    <string name="username">用户名</string>
++    <string name="password">密码</string>
++    <string name="remember_password">记住密码</string>
++    <string name="connecting">连接中...</string>
++    <string name="connection_failed">连接失败</string>
++    <string name="sessions">会话</string>
++    <string name="new_session">新建会话</string>
++    <string name="settings">设置</string>
++    <string name="favorites">收藏</string>
++    <string name="workspace">工作区</string>
++    <string name="send">发送</string>
++    <string name="input_message">输入消息...</string>
++    <string name="approve">允许</string>
++    <string name="reject">拒绝</string>
++    <string name="tool_call">工具调用</string>
++    <string name="agent_running">Agent 运行中...</string>
++    <string name="logout">退出登录</string>
++    <string name="search_sessions">搜索会话...</string>
++</resources>
++```
++
++### 5. themes.xml
++```xml
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <style name="Theme.DshAndroid" parent="android:Theme.Material.Light.NoActionBar">
++        <item name="android:statusBarColor">@android:color/transparent</item>
++        <item name="android:navigationBarColor">@android:color/transparent</item>
++    </style>
++</resources>
++```
++
++## Dependencies
++- Uses Compose Material 3
++- Uses Compose Runtime
++- Uses AndroidX Core
++
++## Verification
++- Verify all files have correct package declarations
++- Verify theme colors are defined
++- Verify string resources are complete
++
++## Commit
++```bash
++git add app/src/main/java/com/dsh/android/ui/theme/ \
++        app/src/main/res/values/
++git commit -m "feat: add Material 3 theme and string resources"
++```
+diff --git a/.superpowers/sdd/dsh-android-client-implementation/task-9-report.md b/.superpowers/sdd/dsh-android-client-implementation/task-9-report.md
+new file mode 100644
+index 0000000..2106da0
+--- /dev/null
++++ b/.superpowers/sdd/dsh-android-client-implementation/task-9-report.md
+@@ -0,0 +1,25 @@
++# Task 9: Theme & UI Foundation — Report
++
++## Status
++DONE
++
++## What was implemented
++- `app/src/main/java/com/dsh/android/ui/theme/Color.kt` — Material 3 color definitions (Blue, BlueGrey, Teal in light/dark variants, plus surface/background colors)
++- `app/src/main/java/com/dsh/android/ui/theme/Theme.kt` — DshAndroidTheme composable with dark/light color schemes, dynamic color support (Android 12+), and status bar integration
++- `app/src/main/java/com/dsh/android/ui/theme/Type.kt` — Typography definitions (bodyLarge, titleLarge, labelSmall)
++- `app/src/main/res/values/strings.xml` — 21 Chinese string resources for all UI elements
++- `app/src/main/res/values/themes.xml` — Material Light NoActionBar theme with transparent status/navigation bars
++
++## Verification
++- File locations verified: YES
++- Package declarations correct: YES (all three Kotlin files use `package com.dsh.android.ui.theme`)
++- Theme colors defined: YES (6 accent colors + 4 surface/background colors)
++- String resources complete: YES (21 strings covering connect, sessions, settings, chat, tool approval)
++
++## Commits
++- **Hash:** `87226cb5dcc5110556a0eb788c26cd5f44a94eb7`
++- **Message:** `feat: add Material 3 theme and string resources`
++- **Files changed:** 5 (3 created, 2 updated)
++
++## Concerns (if any)
++- `strings.xml` and `themes.xml` already existed from a prior task and were updated (not created fresh) — `app_name` changed from "DSH Android" to "DSH Client", and `themes.xml` gained transparent status/navigation bar items.
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+new file mode 100644
+index 0000000..a35101d
+--- /dev/null
++++ b/app/build.gradle.kts
+@@ -0,0 +1,99 @@
++plugins {
++    id("com.android.application")
++    id("org.jetbrains.kotlin.android")
++    id("com.google.dagger.hilt.android")
++}
++
++android {
++    namespace = "com.dsh.android"
++    compileSdk = 34
++
++    defaultConfig {
++        applicationId = "com.dsh.android"
++        minSdk = 26
++        targetSdk = 34
++        versionCode = 1
++        versionName = "1.0"
++
++        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
++        vectorDrawables {
++            useSupportLibrary = true
++        }
++    }
++
++    buildTypes {
++        release {
++            isMinifyEnabled = false
++            proguardFiles(
++                getDefaultProguardFile("proguard-android-optimize.txt"),
++                "proguard-rules.pro"
++            )
++        }
++    }
++    compileOptions {
++        sourceCompatibility = JavaVersion.VERSION_17
++        targetCompatibility = JavaVersion.VERSION_17
++    }
++    kotlinOptions {
++        jvmTarget = "17"
++    }
++    buildFeatures {
++        compose = true
++    }
++    composeOptions {
++        kotlinCompilerExtensionVersion = "1.5.8"
++    }
++    packaging {
++        resources {
++            excludes += "/META-INF/{AL2.0,LGPL2.1}"
++        }
++    }
++}
++
++dependencies {
++    // Compose BOM
++    val composeBom = platform("androidx.compose:compose-bom:2024.02.00")
++    implementation(composeBom)
++    androidTestImplementation(composeBom)
++
++    // Material 3
++    implementation("androidx.compose.material3:material3")
++    implementation("androidx.compose.ui:ui")
++    implementation("androidx.compose.ui:ui-graphics")
++    implementation("androidx.compose.ui:ui-tooling-preview")
++    implementation("androidx.compose.material:material-icons-extended")
++    debugImplementation("androidx.compose.ui:ui-tooling")
++    debugImplementation("androidx.compose.ui:ui-test-manifest")
++
++    // Navigation Compose
++    implementation("androidx.navigation:navigation-compose:2.7.6")
++
++    // Lifecycle & Activity
++    implementation("androidx.core:core-ktx:1.12.0")
++    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
++    implementation("androidx.activity:activity-compose:1.8.2")
++
++    // OkHttp + Retrofit
++    implementation("com.squareup.okhttp3:okhttp:4.12.0")
++    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
++    implementation("com.squareup.retrofit2:retrofit:2.9.0")
++    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
++
++    // Hilt
++    implementation("com.google.dagger:hilt-android:2.50")
++    kapt("com.google.dagger:hilt-android-compiler:2.50")
++    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
++
++    // DataStore Preferences
++    implementation("androidx.datastore:datastore-preferences:1.0.0")
++
++    // Kotlin Coroutines
++    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
++    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
++
++    // Testing
++    testImplementation("junit:junit:4.13.2")
++    androidTestImplementation("androidx.test.ext:junit:1.1.5")
++    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
++    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
++}
+diff --git a/app/proguard-rules.pro b/app/proguard-rules.pro
+new file mode 100644
+index 0000000..7ee6344
+--- /dev/null
++++ b/app/proguard-rules.pro
+@@ -0,0 +1,10 @@
++# Add project specific ProGuard rules here.
++# By default, the flags in this file are appended to flags specified
++# in /sdk/tools/proguard/proguard-android.txt
++# You can edit the include path and order by changing the ProGuard
++# include property in project.properties.
++#
++# For more details, see
++#   http://developer.android.com/guide/developing/tools/proguard.html
++
++# Add any project specific keep options here:
+diff --git a/app/src/main/AndroidManifest.xml b/app/src/main/AndroidManifest.xml
+new file mode 100644
+index 0000000..b659eb9
+--- /dev/null
++++ b/app/src/main/AndroidManifest.xml
+@@ -0,0 +1,26 @@
++<?xml version="1.0" encoding="utf-8"?>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android">
++
++    <uses-permission android:name="android.permission.INTERNET" />
++    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
++
++    <application
++        android:name=".DshApplication"
++        android:allowBackup="true"
++        android:icon="@mipmap/ic_launcher"
++        android:label="@string/app_name"
++        android:roundIcon="@mipmap/ic_launcher_round"
++        android:supportsRtl="true"
++        android:theme="@style/Theme.DshAndroid">
++        <activity
++            android:name=".MainActivity"
++            android:exported="true"
++            android:theme="@style/Theme.DshAndroid">
++            <intent-filter>
++                <action android:name="android.intent.action.MAIN" />
++                <category android:name="android.intent.category.LAUNCHER" />
++            </intent-filter>
++        </activity>
++    </application>
++
++</manifest>
+diff --git a/app/src/main/java/com/dsh/android/DshApplication.kt b/app/src/main/java/com/dsh/android/DshApplication.kt
+new file mode 100644
+index 0000000..1c3c887
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/DshApplication.kt
+@@ -0,0 +1,7 @@
++package com.dsh.android
++
++import android.app.Application
++import dagger.hilt.android.HiltAndroidApp
++
++@HiltAndroidApp
++class DshApplication : Application()
+diff --git a/app/src/main/java/com/dsh/android/MainActivity.kt b/app/src/main/java/com/dsh/android/MainActivity.kt
+new file mode 100644
+index 0000000..f1fd71e
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/MainActivity.kt
+@@ -0,0 +1,24 @@
++package com.dsh.android
++
++import android.os.Bundle
++import androidx.activity.ComponentActivity
++import androidx.activity.compose.setContent
++import androidx.activity.enableEdgeToEdge
++import androidx.navigation.compose.rememberNavController
++import com.dsh.android.ui.navigation.NavGraph
++import com.dsh.android.ui.theme.DshAndroidTheme
++import dagger.hilt.android.AndroidEntryPoint
++
++@AndroidEntryPoint
++class MainActivity : ComponentActivity() {
++    override fun onCreate(savedInstanceState: Bundle?) {
++        super.onCreate(savedInstanceState)
++        enableEdgeToEdge()
++        setContent {
++            DshAndroidTheme {
++                val navController = rememberNavController()
++                NavGraph(navController = navController)
++            }
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/data/local/DshPreferences.kt b/app/src/main/java/com/dsh/android/data/local/DshPreferences.kt
+new file mode 100644
+index 0000000..bc559b6
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/data/local/DshPreferences.kt
+@@ -0,0 +1,60 @@
++package com.dsh.android.data.local
++
++import android.content.Context
++import androidx.datastore.core.DataStore
++import androidx.datastore.preferences.core.*
++import androidx.datastore.preferences.preferencesDataStore
++import dagger.hilt.android.qualifiers.ApplicationContext
++import kotlinx.coroutines.flow.Flow
++import kotlinx.coroutines.flow.map
++import javax.inject.Inject
++import javax.inject.Singleton
++
++private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "dsh_settings")
++
++@Singleton
++class DshPreferences @Inject constructor(
++    @ApplicationContext private val context: Context
++) {
++    companion object {
++        private val SERVER_ADDRESS = stringPreferencesKey("server_address")
++        private val USERNAME = stringPreferencesKey("username")
++        private val SESSION_TOKEN = stringPreferencesKey("session_token")
++        private val REMEMBER_PASSWORD = booleanPreferencesKey("remember_password")
++        private val PASSWORD = stringPreferencesKey("password")
++    }
++
++    val serverAddress: Flow<String?> = context.dataStore.data.map { it[SERVER_ADDRESS] }
++    val username: Flow<String?> = context.dataStore.data.map { it[USERNAME] }
++    val sessionToken: Flow<String?> = context.dataStore.data.map { it[SESSION_TOKEN] }
++    val rememberPassword: Flow<Boolean> = context.dataStore.data.map { it[REMEMBER_PASSWORD] ?: false }
++    val password: Flow<String?> = context.dataStore.data.map { it[PASSWORD] }
++
++    suspend fun saveServerAddress(address: String) {
++        context.dataStore.edit { it[SERVER_ADDRESS] = address }
++    }
++
++    suspend fun saveCredentials(username: String, password: String, remember: Boolean) {
++        context.dataStore.edit {
++            it[USERNAME] = username
++            it[REMEMBER_PASSWORD] = remember
++            if (remember) {
++                it[PASSWORD] = password
++            } else {
++                it.remove(PASSWORD)
++            }
++        }
++    }
++
++    suspend fun saveSessionToken(token: String) {
++        context.dataStore.edit { it[SESSION_TOKEN] = token }
++    }
++
++    suspend fun clearSession() {
++        context.dataStore.edit { it.remove(SESSION_TOKEN) }
++    }
++
++    suspend fun clearAll() {
++        context.dataStore.edit { it.clear() }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/data/remote/AuthInterceptor.kt b/app/src/main/java/com/dsh/android/data/remote/AuthInterceptor.kt
+new file mode 100644
+index 0000000..5f098cf
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/data/remote/AuthInterceptor.kt
+@@ -0,0 +1,35 @@
++package com.dsh.android.data.remote
++
++import com.dsh.android.data.local.DshPreferences
++import kotlinx.coroutines.flow.first
++import kotlinx.coroutines.runBlocking
++import okhttp3.Interceptor
++import okhttp3.Response
++import javax.inject.Inject
++import javax.inject.Singleton
++
++@Singleton
++class AuthInterceptor @Inject constructor(
++    private val preferences: DshPreferences
++) : Interceptor {
++
++    override fun intercept(chain: Interceptor.Chain): Response {
++        val original = chain.request()
++
++        // Skip auth for login endpoint
++        if (original.url.encodedPath.contains("dsh-webui-auth/login")) {
++            return chain.proceed(original)
++        }
++
++        val sessionToken = runBlocking { preferences.sessionToken.first() }
++
++        return if (sessionToken != null) {
++            val request = original.newBuilder()
++                .addHeader("Cookie", "dsh_wua_session=$sessionToken")
++                .build()
++            chain.proceed(request)
++        } else {
++            chain.proceed(original)
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/data/remote/DshApi.kt b/app/src/main/java/com/dsh/android/data/remote/DshApi.kt
+new file mode 100644
+index 0000000..a41280e
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/data/remote/DshApi.kt
+@@ -0,0 +1,25 @@
++package com.dsh.android.data.remote
++
++import com.dsh.android.data.remote.model.*
++import retrofit2.http.*
++
++interface DshApi {
++
++    @POST("dsh-webui-auth/login")
++    suspend fun login(@Body request: LoginRequest): LoginResponse
++
++    @GET("api/sessions")
++    suspend fun getSessions(): List<SessionDto>
++
++    @POST("api/sessions")
++    suspend fun createSession(@Body request: CreateSessionRequest): SessionDto
++
++    @DELETE("api/sessions/{id}")
++    suspend fun deleteSession(@Path("id") sessionId: String)
++
++    @GET("api/sessions/search")
++    suspend fun searchSessions(@Query("q") query: String): List<SessionDto>
++
++    @GET("api/models")
++    suspend fun getModels(): List<ModelDto>
++}
+diff --git a/app/src/main/java/com/dsh/android/data/remote/DshWebSocketClient.kt b/app/src/main/java/com/dsh/android/data/remote/DshWebSocketClient.kt
+new file mode 100644
+index 0000000..4ee07fc
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/data/remote/DshWebSocketClient.kt
+@@ -0,0 +1,121 @@
++package com.dsh.android.data.remote
++
++import com.dsh.android.data.local.DshPreferences
++import com.dsh.android.domain.model.*
++import com.google.gson.Gson
++import com.google.gson.JsonObject
++import kotlinx.coroutines.flow.first
++import okhttp3.*
++import java.util.concurrent.TimeUnit
++import javax.inject.Inject
++import javax.inject.Singleton
++
++@Singleton
++class DshWebSocketClient @Inject constructor(
++    private val preferences: DshPreferences
++) {
++    private val client = OkHttpClient.Builder()
++        .connectTimeout(30, TimeUnit.SECONDS)
++        .readTimeout(0, TimeUnit.SECONDS) // No timeout for WebSocket
++        .build()
++
++    private var webSocket: WebSocket? = null
++    private val gson = Gson()
++
++    fun connect(sessionId: String, onEvent: (WebSocketEvent) -> Unit) {
++        val serverAddress = runBlocking { preferences.serverAddress.first() }
++        val sessionToken = runBlocking { preferences.sessionToken.first() }
++
++        if (serverAddress == null || sessionToken == null) {
++            onEvent(WebSocketEvent.Error(Exception("Not connected to server")))
++            return
++        }
++
++        val wsUrl = serverAddress.replace("http", "ws") + "/api/remote.mux"
++        val request = Request.Builder()
++            .url(wsUrl)
++            .addHeader("Cookie", "dsh_wua_session=$sessionToken")
++            .build()
++
++        webSocket = client.newWebSocket(request, object : WebSocketListener() {
++            override fun onOpen(webSocket: WebSocket, response: Response) {
++                onEvent(WebSocketEvent.Connected(sessionId))
++            }
++
++            override fun onMessage(webSocket: WebSocket, text: String) {
++                try {
++                    val json = gson.fromJson(text, JsonObject::class.java)
++                    val type = json.get("type")?.asString
++
++                    when (type) {
++                        "assistant/message" -> {
++                            val message = Message(
++                                id = json.get("id")?.asString ?: "",
++                                sessionId = sessionId,
++                                role = MessageRole.ASSISTANT,
++                                content = json.get("content")?.asString ?: "",
++                                timestamp = System.currentTimeMillis()
++                            )
++                            onEvent(WebSocketEvent.MessageReceived(message))
++                        }
++                        "tool/call" -> {
++                            val toolCall = ToolCall(
++                                id = json.get("callId")?.asString ?: "",
++                                toolName = json.get("tool")?.asString ?: "",
++                                args = gson.fromJson(json.get("args"), Map::class.java) as? Map<String, Any> ?: emptyMap()
++                            )
++                            onEvent(WebSocketEvent.ToolCallReceived(toolCall))
++                        }
++                        "agent/status" -> {
++                            val status = when (json.get("status")?.asString) {
++                                "running" -> AgentStatus.RUNNING
++                                "waiting" -> AgentStatus.WAITING_CONFIRMATION
++                                else -> AgentStatus.IDLE
++                            }
++                            onEvent(WebSocketEvent.AgentStatusChanged(status))
++                        }
++                    }
++                } catch (e: Exception) {
++                    onEvent(WebSocketEvent.Error(e))
++                }
++            }
++
++            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
++                webSocket.close(1000, null)
++                onEvent(WebSocketEvent.Disconnected(reason))
++            }
++
++            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
++                onEvent(WebSocketEvent.Error(t))
++            }
++        })
++    }
++
++    fun sendMessage(sessionId: String, content: String) {
++        val message = JsonObject().apply {
++            addProperty("type", "user/message")
++            addProperty("sessionId", sessionId)
++            addProperty("content", content)
++        }
++        webSocket?.send(gson.toJson(message))
++    }
++
++    fun confirmToolCall(sessionId: String, callId: String, approved: Boolean) {
++        val message = JsonObject().apply {
++            addProperty("type", "tool/confirm")
++            addProperty("sessionId", sessionId)
++            addProperty("callId", callId)
++            addProperty("approved", approved)
++        }
++        webSocket?.send(gson.toJson(message))
++    }
++
++    fun disconnect() {
++        webSocket?.close(1000, "Client disconnect")
++        webSocket = null
++    }
++
++    private fun <T> runBlocking(block: suspend () -> T): T {
++        return kotlinx.coroutines.runBlocking { block() }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/data/remote/model/CreateSessionRequest.kt b/app/src/main/java/com/dsh/android/data/remote/model/CreateSessionRequest.kt
+new file mode 100644
+index 0000000..226b0dc
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/data/remote/model/CreateSessionRequest.kt
+@@ -0,0 +1,7 @@
++package com.dsh.android.data.remote.model
++
++import com.google.gson.annotations.SerializedName
++
++data class CreateSessionRequest(
++    @SerializedName("title") val title: String = "New Session"
++)
+diff --git a/app/src/main/java/com/dsh/android/data/remote/model/LoginRequest.kt b/app/src/main/java/com/dsh/android/data/remote/model/LoginRequest.kt
+new file mode 100644
+index 0000000..73dd058
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/data/remote/model/LoginRequest.kt
+@@ -0,0 +1,8 @@
++package com.dsh.android.data.remote.model
++
++import com.google.gson.annotations.SerializedName
++
++data class LoginRequest(
++    @SerializedName("username") val username: String,
++    @SerializedName("password") val password: String
++)
+diff --git a/app/src/main/java/com/dsh/android/data/remote/model/LoginResponse.kt b/app/src/main/java/com/dsh/android/data/remote/model/LoginResponse.kt
+new file mode 100644
+index 0000000..5d950b2
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/data/remote/model/LoginResponse.kt
+@@ -0,0 +1,9 @@
++package com.dsh.android.data.remote.model
++
++import com.google.gson.annotations.SerializedName
++
++data class LoginResponse(
++    @SerializedName("ok") val ok: Boolean,
++    @SerializedName("redirect") val redirect: String? = null,
++    @SerializedName("error") val error: String? = null
++)
+diff --git a/app/src/main/java/com/dsh/android/data/remote/model/ModelDto.kt b/app/src/main/java/com/dsh/android/data/remote/model/ModelDto.kt
+new file mode 100644
+index 0000000..f59cf80
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/data/remote/model/ModelDto.kt
+@@ -0,0 +1,16 @@
++package com.dsh.android.data.remote.model
++
++import com.dsh.android.domain.model.DshModel
++import com.google.gson.annotations.SerializedName
++
++data class ModelDto(
++    @SerializedName("id") val id: String,
++    @SerializedName("name") val name: String,
++    @SerializedName("status") val status: String?
++) {
++    fun toDomain() = DshModel(
++        id = id,
++        name = name,
++        isAvailable = status != "unavailable"
++    )
++}
+diff --git a/app/src/main/java/com/dsh/android/data/remote/model/SessionDto.kt b/app/src/main/java/com/dsh/android/data/remote/model/SessionDto.kt
+new file mode 100644
+index 0000000..03d4fab
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/data/remote/model/SessionDto.kt
+@@ -0,0 +1,20 @@
++package com.dsh.android.data.remote.model
++
++import com.dsh.android.domain.model.Session
++import com.google.gson.annotations.SerializedName
++
++data class SessionDto(
++    @SerializedName("id") val id: String,
++    @SerializedName("title") val title: String,
++    @SerializedName("createdAt") val createdAt: Long,
++    @SerializedName("updatedAt") val updatedAt: Long,
++    @SerializedName("model") val model: String?
++) {
++    fun toDomain() = Session(
++        id = id,
++        title = title,
++        createdAt = createdAt,
++        updatedAt = updatedAt,
++        model = model
++    )
++}
+diff --git a/app/src/main/java/com/dsh/android/data/repository/DshRepositoryImpl.kt b/app/src/main/java/com/dsh/android/data/repository/DshRepositoryImpl.kt
+new file mode 100644
+index 0000000..d422e13
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/data/repository/DshRepositoryImpl.kt
+@@ -0,0 +1,121 @@
++package com.dsh.android.data.repository
++
++import com.dsh.android.data.local.DshPreferences
++import com.dsh.android.data.remote.DshApi
++import com.dsh.android.data.remote.DshWebSocketClient
++import com.dsh.android.data.remote.model.CreateSessionRequest
++import com.dsh.android.data.remote.model.LoginRequest
++import com.dsh.android.domain.model.*
++import com.dsh.android.domain.repository.DshRepository
++import kotlinx.coroutines.flow.Flow
++import kotlinx.coroutines.flow.MutableSharedFlow
++import kotlinx.coroutines.flow.map
++import javax.inject.Inject
++import javax.inject.Singleton
++
++@Singleton
++class DshRepositoryImpl @Inject constructor(
++    private val api: DshApi,
++    private val preferences: DshPreferences,
++    private val wsClient: DshWebSocketClient
++) : DshRepository {
++
++    private val _webSocketEvents = MutableSharedFlow<WebSocketEvent>(replay = 0)
++
++    override val isConnected: Flow<Boolean> = preferences.sessionToken.map { it != null }
++    override val webSocketEvents: Flow<WebSocketEvent> = _webSocketEvents
++
++    override suspend fun login(serverAddress: String, username: String, password: String): Result<Unit> {
++        return try {
++            preferences.saveServerAddress(serverAddress)
++            val response = api.login(LoginRequest(username, password))
++            if (response.ok) {
++                preferences.saveSessionToken("authenticated")
++                preferences.saveCredentials(username, password, true)
++                Result.success(Unit)
++            } else {
++                Result.failure(Exception(response.error ?: "Login failed"))
++            }
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun logout() {
++        preferences.clearSession()
++        wsClient.disconnect()
++    }
++
++    override suspend fun getSessions(): Result<List<Session>> {
++        return try {
++            val sessions = api.getSessions().map { it.toDomain() }
++            Result.success(sessions)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun createSession(title: String): Result<Session> {
++        return try {
++            val session = api.createSession(CreateSessionRequest(title)).toDomain()
++            Result.success(session)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun deleteSession(sessionId: String): Result<Unit> {
++        return try {
++            api.deleteSession(sessionId)
++            Result.success(Unit)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun searchSessions(query: String): Result<List<Session>> {
++        return try {
++            val sessions = api.searchSessions(query).map { it.toDomain() }
++            Result.success(sessions)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun getModels(): Result<List<DshModel>> {
++        return try {
++            val models = api.getModels().map { it.toDomain() }
++            Result.success(models)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun sendMessage(sessionId: String, content: String): Result<Unit> {
++        return try {
++            wsClient.sendMessage(sessionId, content)
++            Result.success(Unit)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override suspend fun confirmToolCall(sessionId: String, callId: String, approved: Boolean): Result<Unit> {
++        return try {
++            wsClient.confirmToolCall(sessionId, callId, approved)
++            Result.success(Unit)
++        } catch (e: Exception) {
++            Result.failure(e)
++        }
++    }
++
++    override fun connectWebSocket(sessionId: String) {
++        wsClient.connect(sessionId) { event ->
++            _webSocketEvents.tryEmit(event)
++        }
++    }
++
++    override fun disconnectWebSocket() {
++        wsClient.disconnect()
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/di/AppModule.kt b/app/src/main/java/com/dsh/android/di/AppModule.kt
+new file mode 100644
+index 0000000..245154c
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/di/AppModule.kt
+@@ -0,0 +1,18 @@
++package com.dsh.android.di
++
++import com.dsh.android.data.repository.DshRepositoryImpl
++import com.dsh.android.domain.repository.DshRepository
++import dagger.Binds
++import dagger.Module
++import dagger.hilt.InstallIn
++import dagger.hilt.components.SingletonComponent
++import javax.inject.Singleton
++
++@Module
++@InstallIn(SingletonComponent::class)
++abstract class AppModule {
++
++    @Binds
++    @Singleton
++    abstract fun bindDshRepository(impl: DshRepositoryImpl): DshRepository
++}
+diff --git a/app/src/main/java/com/dsh/android/di/NetworkModule.kt b/app/src/main/java/com/dsh/android/di/NetworkModule.kt
+new file mode 100644
+index 0000000..e4c5b4c
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/di/NetworkModule.kt
+@@ -0,0 +1,51 @@
++package com.dsh.android.di
++
++import com.dsh.android.data.local.DshPreferences
++import com.dsh.android.data.remote.AuthInterceptor
++import com.dsh.android.data.remote.DshApi
++import dagger.Module
++import dagger.Provides
++import dagger.hilt.InstallIn
++import dagger.hilt.components.SingletonComponent
++import okhttp3.OkHttpClient
++import okhttp3.logging.HttpLoggingInterceptor
++import retrofit2.Retrofit
++import retrofit2.converter.gson.GsonConverterFactory
++import java.util.concurrent.TimeUnit
++import javax.inject.Singleton
++
++@Module
++@InstallIn(SingletonComponent::class)
++object NetworkModule {
++
++    @Provides
++    @Singleton
++    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
++        val logging = HttpLoggingInterceptor().apply {
++            level = HttpLoggingInterceptor.Level.BODY
++        }
++
++        return OkHttpClient.Builder()
++            .addInterceptor(authInterceptor)
++            .addInterceptor(logging)
++            .connectTimeout(30, TimeUnit.SECONDS)
++            .readTimeout(30, TimeUnit.SECONDS)
++            .build()
++    }
++
++    @Provides
++    @Singleton
++    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
++        return Retrofit.Builder()
++            .baseUrl("http://localhost/") // Base URL will be overridden per request
++            .client(okHttpClient)
++            .addConverterFactory(GsonConverterFactory.create())
++            .build()
++    }
++
++    @Provides
++    @Singleton
++    fun provideDshApi(retrofit: Retrofit): DshApi {
++        return retrofit.create(DshApi::class.java)
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/domain/model/DshModel.kt b/app/src/main/java/com/dsh/android/domain/model/DshModel.kt
+new file mode 100644
+index 0000000..ee225a8
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/domain/model/DshModel.kt
+@@ -0,0 +1,7 @@
++package com.dsh.android.domain.model
++
++data class DshModel(
++    val id: String,
++    val name: String,
++    val isAvailable: Boolean = true
++)
+diff --git a/app/src/main/java/com/dsh/android/domain/model/Message.kt b/app/src/main/java/com/dsh/android/domain/model/Message.kt
+new file mode 100644
+index 0000000..ee796ad
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/domain/model/Message.kt
+@@ -0,0 +1,16 @@
++package com.dsh.android.domain.model
++
++data class Message(
++    val id: String,
++    val sessionId: String,
++    val role: MessageRole,
++    val content: String,
++    val timestamp: Long,
++    val toolCalls: List<ToolCall> = emptyList()
++)
++
++enum class MessageRole {
++    USER,
++    ASSISTANT,
++    SYSTEM
++}
+diff --git a/app/src/main/java/com/dsh/android/domain/model/Session.kt b/app/src/main/java/com/dsh/android/domain/model/Session.kt
+new file mode 100644
+index 0000000..22ece90
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/domain/model/Session.kt
+@@ -0,0 +1,9 @@
++package com.dsh.android.domain.model
++
++data class Session(
++    val id: String,
++    val title: String,
++    val createdAt: Long,
++    val updatedAt: Long,
++    val model: String? = null
++)
+diff --git a/app/src/main/java/com/dsh/android/domain/model/ToolCall.kt b/app/src/main/java/com/dsh/android/domain/model/ToolCall.kt
+new file mode 100644
+index 0000000..dfaa035
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/domain/model/ToolCall.kt
+@@ -0,0 +1,16 @@
++package com.dsh.android.domain.model
++
++data class ToolCall(
++    val id: String,
++    val toolName: String,
++    val args: Map<String, Any>,
++    val status: ToolCallStatus = ToolCallStatus.PENDING
++)
++
++enum class ToolCallStatus {
++    PENDING,
++    APPROVED,
++    REJECTED,
++    COMPLETED,
++    ERROR
++}
+diff --git a/app/src/main/java/com/dsh/android/domain/model/WebSocketEvent.kt b/app/src/main/java/com/dsh/android/domain/model/WebSocketEvent.kt
+new file mode 100644
+index 0000000..f663416
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/domain/model/WebSocketEvent.kt
+@@ -0,0 +1,16 @@
++package com.dsh.android.domain.model
++
++sealed class WebSocketEvent {
++    data class Connected(val sessionId: String) : WebSocketEvent()
++    data class Disconnected(val reason: String? = null) : WebSocketEvent()
++    data class MessageReceived(val message: Message) : WebSocketEvent()
++    data class ToolCallReceived(val toolCall: ToolCall) : WebSocketEvent()
++    data class AgentStatusChanged(val status: AgentStatus) : WebSocketEvent()
++    data class Error(val error: Throwable) : WebSocketEvent()
++}
++
++enum class AgentStatus {
++    IDLE,
++    RUNNING,
++    WAITING_CONFIRMATION
++}
+diff --git a/app/src/main/java/com/dsh/android/domain/repository/DshRepository.kt b/app/src/main/java/com/dsh/android/domain/repository/DshRepository.kt
+new file mode 100644
+index 0000000..92339ab
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/domain/repository/DshRepository.kt
+@@ -0,0 +1,21 @@
++package com.dsh.android.domain.repository
++
++import com.dsh.android.domain.model.*
++import kotlinx.coroutines.flow.Flow
++
++interface DshRepository {
++    val isConnected: Flow<Boolean>
++    val webSocketEvents: Flow<WebSocketEvent>
++
++    suspend fun login(serverAddress: String, username: String, password: String): Result<Unit>
++    suspend fun logout()
++    suspend fun getSessions(): Result<List<Session>>
++    suspend fun createSession(title: String): Result<Session>
++    suspend fun deleteSession(sessionId: String): Result<Unit>
++    suspend fun searchSessions(query: String): Result<List<Session>>
++    suspend fun getModels(): Result<List<DshModel>>
++    suspend fun sendMessage(sessionId: String, content: String): Result<Unit>
++    suspend fun confirmToolCall(sessionId: String, callId: String, approved: Boolean): Result<Unit>
++    fun connectWebSocket(sessionId: String)
++    fun disconnectWebSocket()
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/chat/ChatScreen.kt b/app/src/main/java/com/dsh/android/ui/chat/ChatScreen.kt
+new file mode 100644
+index 0000000..3c998e2
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/chat/ChatScreen.kt
+@@ -0,0 +1,93 @@
++package com.dsh.android.ui.chat
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.lazy.LazyColumn
++import androidx.compose.foundation.lazy.items
++import androidx.compose.foundation.lazy.rememberLazyListState
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.ArrowBack
++import androidx.compose.material3.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import androidx.hilt.navigation.compose.hiltViewModel
++import com.dsh.android.domain.model.AgentStatus
++import com.dsh.android.ui.chat.components.ChatInput
++import com.dsh.android.ui.chat.components.MessageBubble
++import com.dsh.android.ui.chat.components.ToolCallCard
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun ChatScreen(
++    sessionId: String,
++    onBack: () -> Unit,
++    viewModel: ChatViewModel = hiltViewModel()
++) {
++    val uiState by viewModel.uiState.collectAsState()
++    val listState = rememberLazyListState()
++
++    LaunchedEffect(sessionId) {
++        viewModel.setSession(sessionId)
++    }
++
++    // Auto-scroll to bottom when new messages arrive
++    LaunchedEffect(uiState.messages.size) {
++        if (uiState.messages.isNotEmpty()) {
++            listState.animateScrollToItem(uiState.messages.size - 1)
++        }
++    }
++
++    Scaffold(
++        topBar = {
++            TopAppBar(
++                title = { Text("会话") },
++                navigationIcon = {
++                    IconButton(onClick = onBack) {
++                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
++                    }
++                },
++                actions = {
++                    // Agent status indicator
++                    if (uiState.agentStatus == AgentStatus.RUNNING) {
++                        CircularProgressIndicator(
++                            modifier = Modifier
++                                .size(20.dp)
++                                .padding(end = 8.dp)
++                        )
++                    }
++                }
++            )
++        },
++        bottomBar = {
++            ChatInput(
++                value = uiState.inputText,
++                onValueChange = viewModel::onInputChange,
++                onSend = viewModel::sendMessage
++            )
++        }
++    ) { padding ->
++        LazyColumn(
++            state = listState,
++            modifier = Modifier
++                .fillMaxSize()
++                .padding(padding)
++                .padding(horizontal = 16.dp),
++            verticalArrangement = Arrangement.spacedBy(8.dp),
++            contentPadding = PaddingValues(vertical = 8.dp)
++        ) {
++            // Tool calls
++            items(uiState.toolCalls) { toolCall ->
++                ToolCallCard(
++                    toolCall = toolCall,
++                    onApprove = { viewModel.confirmToolCall(toolCall.id, true) },
++                    onReject = { viewModel.confirmToolCall(toolCall.id, false) }
++                )
++            }
++
++            // Messages
++            items(uiState.messages) { message ->
++                MessageBubble(message = message)
++            }
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/chat/ChatViewModel.kt b/app/src/main/java/com/dsh/android/ui/chat/ChatViewModel.kt
+new file mode 100644
+index 0000000..af5bf5b
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/chat/ChatViewModel.kt
+@@ -0,0 +1,121 @@
++package com.dsh.android.ui.chat
++
++import androidx.lifecycle.ViewModel
++import androidx.lifecycle.viewModelScope
++import com.dsh.android.domain.model.*
++import com.dsh.android.domain.repository.DshRepository
++import dagger.hilt.android.lifecycle.HiltViewModel
++import kotlinx.coroutines.flow.*
++import kotlinx.coroutines.launch
++import javax.inject.Inject
++
++data class ChatUiState(
++    val messages: List<Message> = emptyList(),
++    val toolCalls: List<ToolCall> = emptyList(),
++    val agentStatus: AgentStatus = AgentStatus.IDLE,
++    val isLoading: Boolean = false,
++    val error: String? = null,
++    val inputText: String = ""
++)
++
++@HiltViewModel
++class ChatViewModel @Inject constructor(
++    private val repository: DshRepository
++) : ViewModel() {
++
++    private val _uiState = MutableStateFlow(ChatUiState())
++    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
++
++    private var currentSessionId: String? = null
++
++    init {
++        observeWebSocketEvents()
++    }
++
++    fun setSession(sessionId: String) {
++        currentSessionId = sessionId
++        repository.connectWebSocket(sessionId)
++    }
++
++    private fun observeWebSocketEvents() {
++        viewModelScope.launch {
++            repository.webSocketEvents.collect { event ->
++                when (event) {
++                    is WebSocketEvent.Connected -> {
++                        _uiState.value = _uiState.value.copy(isLoading = false)
++                    }
++                    is WebSocketEvent.Disconnected -> {
++                        _uiState.value = _uiState.value.copy(error = "连接断开")
++                    }
++                    is WebSocketEvent.MessageReceived -> {
++                        val messages = _uiState.value.messages + event.message
++                        _uiState.value = _uiState.value.copy(messages = messages)
++                    }
++                    is WebSocketEvent.ToolCallReceived -> {
++                        val toolCalls = _uiState.value.toolCalls + event.toolCall
++                        _uiState.value = _uiState.value.copy(
++                            toolCalls = toolCalls,
++                            agentStatus = AgentStatus.WAITING_CONFIRMATION
++                        )
++                    }
++                    is WebSocketEvent.AgentStatusChanged -> {
++                        _uiState.value = _uiState.value.copy(agentStatus = event.status)
++                    }
++                    is WebSocketEvent.Error -> {
++                        _uiState.value = _uiState.value.copy(error = event.error.message)
++                    }
++                }
++            }
++        }
++    }
++
++    fun onInputChange(text: String) {
++        _uiState.value = _uiState.value.copy(inputText = text)
++    }
++
++    fun sendMessage() {
++        val text = _uiState.value.inputText.trim()
++        if (text.isBlank() || currentSessionId == null) return
++
++        val userMessage = Message(
++            id = System.currentTimeMillis().toString(),
++            sessionId = currentSessionId!!,
++            role = MessageRole.USER,
++            content = text,
++            timestamp = System.currentTimeMillis()
++        )
++
++        _uiState.value = _uiState.value.copy(
++            messages = _uiState.value.messages + userMessage,
++            inputText = "",
++            agentStatus = AgentStatus.RUNNING
++        )
++
++        viewModelScope.launch {
++            repository.sendMessage(currentSessionId!!, text)
++        }
++    }
++
++    fun confirmToolCall(callId: String, approved: Boolean) {
++        val toolCalls = _uiState.value.toolCalls.map { tc ->
++            if (tc.id == callId) {
++                tc.copy(status = if (approved) ToolCallStatus.APPROVED else ToolCallStatus.REJECTED)
++            } else {
++                tc
++            }
++        }
++        _uiState.value = _uiState.value.copy(
++            toolCalls = toolCalls,
++            agentStatus = AgentStatus.RUNNING
++        )
++
++        viewModelScope.launch {
++            repository.confirmToolCall(currentSessionId!!, callId, approved)
++        }
++    }
++
++    override fun onCleared() {
++        super.onCleared()
++        repository.disconnectWebSocket()
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/chat/components/ChatInput.kt b/app/src/main/java/com/dsh/android/ui/chat/components/ChatInput.kt
+new file mode 100644
+index 0000000..87e554f
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/chat/components/ChatInput.kt
+@@ -0,0 +1,51 @@
++package com.dsh.android.ui.chat.components
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.Send
++import androidx.compose.material3.*
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++
++@Composable
++fun ChatInput(
++    value: String,
++    onValueChange: (String) -> Unit,
++    onSend: () -> Unit,
++    modifier: Modifier = Modifier
++) {
++    Surface(
++        modifier = modifier,
++        tonalElevation = 3.dp
++    ) {
++        Row(
++            modifier = Modifier
++                .padding(8.dp)
++                .fillMaxWidth()
++        ) {
++            OutlinedTextField(
++                value = value,
++                onValueChange = onValueChange,
++                modifier = Modifier.weight(1f),
++                placeholder = { Text("输入消息...") },
++                maxLines = 4
++            )
++            Spacer(modifier = Modifier.width(8.dp))
++            IconButton(
++                onClick = onSend,
++                enabled = value.isNotBlank()
++            ) {
++                Icon(
++                    Icons.Default.Send,
++                    contentDescription = "发送",
++                    tint = if (value.isNotBlank()) {
++                        MaterialTheme.colorScheme.primary
++                    } else {
++                        MaterialTheme.colorScheme.onSurfaceVariant
++                    }
++                )
++            }
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/chat/components/MessageBubble.kt b/app/src/main/java/com/dsh/android/ui/chat/components/MessageBubble.kt
+new file mode 100644
+index 0000000..664d30c
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/chat/components/MessageBubble.kt
+@@ -0,0 +1,51 @@
++package com.dsh.android.ui.chat.components
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.Surface
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import com.dsh.android.domain.model.Message
++import com.dsh.android.domain.model.MessageRole
++
++@Composable
++fun MessageBubble(
++    message: Message,
++    modifier: Modifier = Modifier
++) {
++    val isUser = message.role == MessageRole.USER
++
++    Row(
++        modifier = modifier.fillMaxWidth(),
++        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
++    ) {
++        Surface(
++            shape = RoundedCornerShape(
++                topStart = 16.dp,
++                topEnd = 16.dp,
++                bottomStart = if (isUser) 16.dp else 4.dp,
++                bottomEnd = if (isUser) 4.dp else 16.dp
++            ),
++            color = if (isUser) {
++                MaterialTheme.colorScheme.primary
++            } else {
++                MaterialTheme.colorScheme.surfaceVariant
++            },
++            modifier = Modifier.widthIn(max = 300.dp)
++        ) {
++            Text(
++                text = message.content,
++                modifier = Modifier.padding(12.dp),
++                color = if (isUser) {
++                    MaterialTheme.colorScheme.onPrimary
++                } else {
++                    MaterialTheme.colorScheme.onSurfaceVariant
++                },
++                style = MaterialTheme.typography.bodyMedium
++            )
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/chat/components/ToolCallCard.kt b/app/src/main/java/com/dsh/android/ui/chat/components/ToolCallCard.kt
+new file mode 100644
+index 0000000..f0110d6
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/chat/components/ToolCallCard.kt
+@@ -0,0 +1,76 @@
++package com.dsh.android.ui.chat.components
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.material3.*
++import androidx.compose.runtime.Composable
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import com.dsh.android.domain.model.ToolCall
++import com.dsh.android.domain.model.ToolCallStatus
++
++@Composable
++fun ToolCallCard(
++    toolCall: ToolCall,
++    onApprove: () -> Unit,
++    onReject: () -> Unit,
++    modifier: Modifier = Modifier
++) {
++    Card(
++        modifier = modifier.fillMaxWidth(),
++        colors = CardDefaults.cardColors(
++            containerColor = MaterialTheme.colorScheme.secondaryContainer
++        )
++    ) {
++        Column(
++            modifier = Modifier.padding(16.dp)
++        ) {
++            Row(
++                modifier = Modifier.fillMaxWidth(),
++                horizontalArrangement = Arrangement.SpaceBetween
++            ) {
++                Text(
++                    text = "🔧 ${toolCall.toolName}",
++                    style = MaterialTheme.typography.titleSmall
++                )
++                Text(
++                    text = when (toolCall.status) {
++                        ToolCallStatus.PENDING -> "待确认"
++                        ToolCallStatus.APPROVED -> "已允许"
++                        ToolCallStatus.REJECTED -> "已拒绝"
++                        ToolCallStatus.COMPLETED -> "已完成"
++                        ToolCallStatus.ERROR -> "错误"
++                    },
++                    style = MaterialTheme.typography.bodySmall,
++                    color = MaterialTheme.colorScheme.onSurfaceVariant
++                )
++            }
++
++            Spacer(modifier = Modifier.height(8.dp))
++
++            // Show tool arguments
++            Text(
++                text = toolCall.args.toString(),
++                style = MaterialTheme.typography.bodySmall,
++                color = MaterialTheme.colorScheme.onSurfaceVariant
++            )
++
++            if (toolCall.status == ToolCallStatus.PENDING) {
++                Spacer(modifier = Modifier.height(12.dp))
++                Row(
++                    modifier = Modifier.fillMaxWidth(),
++                    horizontalArrangement = Arrangement.End
++                ) {
++                    OutlinedButton(
++                        onClick = onReject,
++                        modifier = Modifier.padding(end = 8.dp)
++                    ) {
++                        Text("拒绝")
++                    }
++                    Button(onClick = onApprove) {
++                        Text("允许")
++                    }
++                }
++            }
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/connection/ConnectionScreen.kt b/app/src/main/java/com/dsh/android/ui/connection/ConnectionScreen.kt
+new file mode 100644
+index 0000000..eade9b6
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/connection/ConnectionScreen.kt
+@@ -0,0 +1,120 @@
++package com.dsh.android.ui.connection
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.text.KeyboardOptions
++import androidx.compose.material3.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.text.input.KeyboardType
++import androidx.compose.ui.text.input.PasswordVisualTransformation
++import androidx.compose.ui.unit.dp
++import androidx.hilt.navigation.compose.hiltViewModel
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun ConnectionScreen(
++    onConnected: () -> Unit,
++    viewModel: ConnectionViewModel = hiltViewModel()
++) {
++    val uiState by viewModel.uiState.collectAsState()
++
++    LaunchedEffect(uiState.isConnected) {
++        if (uiState.isConnected) {
++            onConnected()
++        }
++    }
++
++    Scaffold(
++        topBar = {
++            TopAppBar(title = { Text("DSH Client") })
++        }
++    ) { padding ->
++        Column(
++            modifier = Modifier
++                .fillMaxSize()
++                .padding(padding)
++                .padding(24.dp),
++            horizontalAlignment = Alignment.CenterHorizontally,
++            verticalArrangement = Arrangement.Center
++        ) {
++            Text(
++                text = "连接到 DSH 服务器",
++                style = MaterialTheme.typography.headlineMedium
++            )
++
++            Spacer(modifier = Modifier.height(32.dp))
++
++            OutlinedTextField(
++                value = uiState.serverAddress,
++                onValueChange = viewModel::onServerAddressChange,
++                label = { Text("服务器地址") },
++                placeholder = { Text("https://dsh.example.com:3080") },
++                modifier = Modifier.fillMaxWidth(),
++                singleLine = true,
++                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
++            )
++
++            Spacer(modifier = Modifier.height(16.dp))
++
++            OutlinedTextField(
++                value = uiState.username,
++                onValueChange = viewModel::onUsernameChange,
++                label = { Text("用户名") },
++                modifier = Modifier.fillMaxWidth(),
++                singleLine = true
++            )
++
++            Spacer(modifier = Modifier.height(16.dp))
++
++            OutlinedTextField(
++                value = uiState.password,
++                onValueChange = viewModel::onPasswordChange,
++                label = { Text("密码") },
++                modifier = Modifier.fillMaxWidth(),
++                singleLine = true,
++                visualTransformation = PasswordVisualTransformation(),
++                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
++            )
++
++            Spacer(modifier = Modifier.height(8.dp))
++
++            Row(
++                modifier = Modifier.fillMaxWidth(),
++                verticalAlignment = Alignment.CenterVertically
++            ) {
++                Checkbox(
++                    checked = uiState.rememberPassword,
++                    onCheckedChange = viewModel::onRememberPasswordChange
++                )
++                Text("记住密码")
++            }
++
++            Spacer(modifier = Modifier.height(24.dp))
++
++            Button(
++                onClick = viewModel::connect,
++                modifier = Modifier.fillMaxWidth(),
++                enabled = !uiState.isLoading
++            ) {
++                if (uiState.isLoading) {
++                    CircularProgressIndicator(
++                        modifier = Modifier.size(20.dp),
++                        color = MaterialTheme.colorScheme.onPrimary
++                    )
++                } else {
++                    Text("连接")
++                }
++            }
++
++            uiState.error?.let { error ->
++                Spacer(modifier = Modifier.height(16.dp))
++                Text(
++                    text = error,
++                    color = MaterialTheme.colorScheme.error,
++                    style = MaterialTheme.typography.bodyMedium
++                )
++            }
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/connection/ConnectionViewModel.kt b/app/src/main/java/com/dsh/android/ui/connection/ConnectionViewModel.kt
+new file mode 100644
+index 0000000..b67061a
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/connection/ConnectionViewModel.kt
+@@ -0,0 +1,67 @@
++package com.dsh.android.ui.connection
++
++import androidx.lifecycle.ViewModel
++import androidx.lifecycle.viewModelScope
++import com.dsh.android.domain.repository.DshRepository
++import dagger.hilt.android.lifecycle.HiltViewModel
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.StateFlow
++import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.launch
++import javax.inject.Inject
++
++data class ConnectionUiState(
++    val serverAddress: String = "",
++    val username: String = "",
++    val password: String = "",
++    val rememberPassword: Boolean = false,
++    val isLoading: Boolean = false,
++    val error: String? = null,
++    val isConnected: Boolean = false
++)
++
++@HiltViewModel
++class ConnectionViewModel @Inject constructor(
++    private val repository: DshRepository
++) : ViewModel() {
++
++    private val _uiState = MutableStateFlow(ConnectionUiState())
++    val uiState: StateFlow<ConnectionUiState> = _uiState.asStateFlow()
++
++    fun onServerAddressChange(address: String) {
++        _uiState.value = _uiState.value.copy(serverAddress = address)
++    }
++
++    fun onUsernameChange(username: String) {
++        _uiState.value = _uiState.value.copy(username = username)
++    }
++
++    fun onPasswordChange(password: String) {
++        _uiState.value = _uiState.value.copy(password = password)
++    }
++
++    fun onRememberPasswordChange(remember: Boolean) {
++        _uiState.value = _uiState.value.copy(rememberPassword = remember)
++    }
++
++    fun connect() {
++        val state = _uiState.value
++        if (state.serverAddress.isBlank() || state.username.isBlank() || state.password.isBlank()) {
++            _uiState.value = state.copy(error = "请填写所有字段")
++            return
++        }
++
++        viewModelScope.launch {
++            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
++            val result = repository.login(state.serverAddress, state.username, state.password)
++            result.fold(
++                onSuccess = {
++                    _uiState.value = _uiState.value.copy(isLoading = false, isConnected = true)
++                },
++                onFailure = { e ->
++                    _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
++                }
++            )
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/navigation/NavGraph.kt b/app/src/main/java/com/dsh/android/ui/navigation/NavGraph.kt
+new file mode 100644
+index 0000000..4ec20c3
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/navigation/NavGraph.kt
+@@ -0,0 +1,70 @@
++package com.dsh.android.ui.navigation
++
++import androidx.compose.runtime.Composable
++import androidx.navigation.NavHostController
++import androidx.navigation.compose.NavHost
++import androidx.navigation.compose.composable
++import com.dsh.android.ui.chat.ChatScreen
++import com.dsh.android.ui.connection.ConnectionScreen
++import com.dsh.android.ui.sessions.SessionListScreen
++import com.dsh.android.ui.settings.SettingsScreen
++
++sealed class Screen(val route: String) {
++    object Connection : Screen("connection")
++    object Sessions : Screen("sessions")
++    object Chat : Screen("chat/{sessionId}") {
++        fun createRoute(sessionId: String) = "chat/$sessionId"
++    }
++    object Settings : Screen("settings")
++}
++
++@Composable
++fun NavGraph(
++    navController: NavHostController,
++    startDestination: String = Screen.Connection.route
++) {
++    NavHost(
++        navController = navController,
++        startDestination = startDestination
++    ) {
++        composable(Screen.Connection.route) {
++            ConnectionScreen(
++                onConnected = {
++                    navController.navigate(Screen.Sessions.route) {
++                        popUpTo(Screen.Connection.route) { inclusive = true }
++                    }
++                }
++            )
++        }
++
++        composable(Screen.Sessions.route) {
++            SessionListScreen(
++                onSessionClick = { sessionId ->
++                    navController.navigate(Screen.Chat.createRoute(sessionId))
++                },
++                onSettingsClick = {
++                    navController.navigate(Screen.Settings.route)
++                }
++            )
++        }
++
++        composable(Screen.Chat.route) { backStackEntry ->
++            val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
++            ChatScreen(
++                sessionId = sessionId,
++                onBack = { navController.popBackStack() }
++            )
++        }
++
++        composable(Screen.Settings.route) {
++            SettingsScreen(
++                onBack = { navController.popBackStack() },
++                onLogout = {
++                    navController.navigate(Screen.Connection.route) {
++                        popUpTo(0) { inclusive = true }
++                    }
++                }
++            )
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/sessions/SessionListScreen.kt b/app/src/main/java/com/dsh/android/ui/sessions/SessionListScreen.kt
+new file mode 100644
+index 0000000..aced2a5
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/sessions/SessionListScreen.kt
+@@ -0,0 +1,136 @@
++package com.dsh.android.ui.sessions
++
++import androidx.compose.foundation.clickable
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.lazy.LazyColumn
++import androidx.compose.foundation.lazy.items
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.Add
++import androidx.compose.material.icons.filled.Search
++import androidx.compose.material.icons.filled.Settings
++import androidx.compose.material3.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.Alignment
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import androidx.hilt.navigation.compose.hiltViewModel
++import com.dsh.android.domain.model.Session
++import java.text.SimpleDateFormat
++import java.util.*
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun SessionListScreen(
++    onSessionClick: (String) -> Unit,
++    onSettingsClick: () -> Unit,
++    viewModel: SessionListViewModel = hiltViewModel()
++) {
++    val uiState by viewModel.uiState.collectAsState()
++
++    Scaffold(
++        topBar = {
++            TopAppBar(
++                title = { Text("工作区") },
++                actions = {
++                    IconButton(onClick = onSettingsClick) {
++                        Icon(Icons.Default.Settings, contentDescription = "设置")
++                    }
++                }
++            )
++        },
++        floatingActionButton = {
++            FloatingActionButton(onClick = viewModel::createSession) {
++                Icon(Icons.Default.Add, contentDescription = "新建会话")
++            }
++        }
++    ) { padding ->
++        Column(
++            modifier = Modifier
++                .fillMaxSize()
++                .padding(padding)
++        ) {
++            // Search bar
++            OutlinedTextField(
++                value = uiState.searchQuery,
++                onValueChange = viewModel::onSearchQueryChange,
++                label = { Text("搜索会话...") },
++                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
++                modifier = Modifier
++                    .fillMaxWidth()
++                    .padding(horizontal = 16.dp, vertical = 8.dp),
++                singleLine = true
++            )
++
++            when {
++                uiState.isLoading -> {
++                    Box(
++                        modifier = Modifier.fillMaxSize(),
++                        contentAlignment = Alignment.Center
++                    ) {
++                        CircularProgressIndicator()
++                    }
++                }
++                uiState.sessions.isEmpty() -> {
++                    Box(
++                        modifier = Modifier.fillMaxSize(),
++                        contentAlignment = Alignment.Center
++                    ) {
++                        Text("暂无会话", style = MaterialTheme.typography.bodyLarge)
++                    }
++                }
++                else -> {
++                    LazyColumn(
++                        modifier = Modifier.fillMaxSize(),
++                        contentPadding = PaddingValues(16.dp),
++                        verticalArrangement = Arrangement.spacedBy(8.dp)
++                    ) {
++                        items(uiState.sessions) { session ->
++                            SessionItem(
++                                session = session,
++                                onClick = { onSessionClick(session.id) }
++                            )
++                        }
++                    }
++                }
++            }
++        }
++    }
++}
++
++@Composable
++fun SessionItem(
++    session: Session,
++    onClick: () -> Unit
++) {
++    Card(
++        modifier = Modifier
++            .fillMaxWidth()
++            .clickable(onClick = onClick)
++    ) {
++        Column(
++            modifier = Modifier.padding(16.dp)
++        ) {
++            Text(
++                text = session.title,
++                style = MaterialTheme.typography.titleMedium
++            )
++            Spacer(modifier = Modifier.height(4.dp))
++            Text(
++                text = session.model ?: "Unknown model",
++                style = MaterialTheme.typography.bodySmall,
++                color = MaterialTheme.colorScheme.onSurfaceVariant
++            )
++            Spacer(modifier = Modifier.height(4.dp))
++            Text(
++                text = formatDate(session.updatedAt),
++                style = MaterialTheme.typography.bodySmall,
++                color = MaterialTheme.colorScheme.onSurfaceVariant
++            )
++        }
++    }
++}
++
++private fun formatDate(timestamp: Long): String {
++    val sdf = SimpleDateFormat("MM/dd HH:mm", Locale.getDefault())
++    return sdf.format(Date(timestamp))
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/sessions/SessionListViewModel.kt b/app/src/main/java/com/dsh/android/ui/sessions/SessionListViewModel.kt
+new file mode 100644
+index 0000000..aff88a7
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/sessions/SessionListViewModel.kt
+@@ -0,0 +1,92 @@
++package com.dsh.android.ui.sessions
++
++import androidx.lifecycle.ViewModel
++import androidx.lifecycle.viewModelScope
++import com.dsh.android.domain.model.Session
++import com.dsh.android.domain.repository.DshRepository
++import dagger.hilt.android.lifecycle.HiltViewModel
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.StateFlow
++import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.launch
++import javax.inject.Inject
++
++data class SessionListUiState(
++    val sessions: List<Session> = emptyList(),
++    val isLoading: Boolean = false,
++    val error: String? = null,
++    val searchQuery: String = ""
++)
++
++@HiltViewModel
++class SessionListViewModel @Inject constructor(
++    private val repository: DshRepository
++) : ViewModel() {
++
++    private val _uiState = MutableStateFlow(SessionListUiState())
++    val uiState: StateFlow<SessionListUiState> = _uiState.asStateFlow()
++
++    init {
++        loadSessions()
++    }
++
++    fun loadSessions() {
++        viewModelScope.launch {
++            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
++            val result = repository.getSessions()
++            result.fold(
++                onSuccess = { sessions ->
++                    _uiState.value = _uiState.value.copy(sessions = sessions, isLoading = false)
++                },
++                onFailure = { e ->
++                    _uiState.value = _uiState.value.copy(error = e.message, isLoading = false)
++                }
++            )
++        }
++    }
++
++    fun onSearchQueryChange(query: String) {
++        _uiState.value = _uiState.value.copy(searchQuery = query)
++        if (query.isBlank()) {
++            loadSessions()
++        } else {
++            searchSessions(query)
++        }
++    }
++
++    private fun searchSessions(query: String) {
++        viewModelScope.launch {
++            val result = repository.searchSessions(query)
++            result.fold(
++                onSuccess = { sessions ->
++                    _uiState.value = _uiState.value.copy(sessions = sessions)
++                },
++                onFailure = { /* Ignore search errors */ }
++            )
++        }
++    }
++
++    fun createSession() {
++        viewModelScope.launch {
++            val result = repository.createSession("New Session")
++            result.fold(
++                onSuccess = { loadSessions() },
++                onFailure = { e ->
++                    _uiState.value = _uiState.value.copy(error = e.message)
++                }
++            )
++        }
++    }
++
++    fun deleteSession(sessionId: String) {
++        viewModelScope.launch {
++            val result = repository.deleteSession(sessionId)
++            result.fold(
++                onSuccess = { loadSessions() },
++                onFailure = { e ->
++                    _uiState.value = _uiState.value.copy(error = e.message)
++                }
++            )
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/settings/SettingsScreen.kt b/app/src/main/java/com/dsh/android/ui/settings/SettingsScreen.kt
+new file mode 100644
+index 0000000..25e1d3e
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/settings/SettingsScreen.kt
+@@ -0,0 +1,110 @@
++package com.dsh.android.ui.settings
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.material.icons.Icons
++import androidx.compose.material.icons.filled.ArrowBack
++import androidx.compose.material.icons.filled.Logout
++import androidx.compose.material3.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.unit.dp
++import androidx.hilt.navigation.compose.hiltViewModel
++
++@OptIn(ExperimentalMaterial3Api::class)
++@Composable
++fun SettingsScreen(
++    onBack: () -> Unit,
++    onLogout: () -> Unit,
++    viewModel: SettingsViewModel = hiltViewModel()
++) {
++    val uiState by viewModel.uiState.collectAsState()
++
++    LaunchedEffect(uiState.isConnected) {
++        if (!uiState.isConnected) {
++            onLogout()
++        }
++    }
++
++    Scaffold(
++        topBar = {
++            TopAppBar(
++                title = { Text("设置") },
++                navigationIcon = {
++                    IconButton(onClick = onBack) {
++                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
++                    }
++                }
++            )
++        }
++    ) { padding ->
++        Column(
++            modifier = Modifier
++                .fillMaxSize()
++                .padding(padding)
++                .padding(16.dp)
++        ) {
++            // Server Settings
++            Text(
++                text = "服务器设置",
++                style = MaterialTheme.typography.titleMedium
++            )
++            Spacer(modifier = Modifier.height(8.dp))
++            OutlinedCard(
++                modifier = Modifier.fillMaxWidth()
++            ) {
++                Column(
++                    modifier = Modifier.padding(16.dp)
++                ) {
++                    Text("地址: ${uiState.serverAddress}")
++                    Spacer(modifier = Modifier.height(4.dp))
++                    Text("用户名: ${uiState.username}")
++                    Spacer(modifier = Modifier.height(4.dp))
++                    Text(
++                        "状态: ${if (uiState.isConnected) "已连接" else "未连接"}",
++                        color = if (uiState.isConnected) {
++                            MaterialTheme.colorScheme.primary
++                        } else {
++                            MaterialTheme.colorScheme.error
++                        }
++                    )
++                }
++            }
++
++            Spacer(modifier = Modifier.height(24.dp))
++
++            // App Settings
++            Text(
++                text = "应用设置",
++                style = MaterialTheme.typography.titleMedium
++            )
++            Spacer(modifier = Modifier.height(8.dp))
++            OutlinedCard(
++                modifier = Modifier.fillMaxWidth()
++            ) {
++                Column(
++                    modifier = Modifier.padding(16.dp)
++                ) {
++                    Text("版本: 1.0.0")
++                }
++            }
++
++            Spacer(modifier = Modifier.height(24.dp))
++
++            // Logout button
++            Button(
++                onClick = viewModel::logout,
++                modifier = Modifier.fillMaxWidth(),
++                colors = ButtonDefaults.buttonColors(
++                    containerColor = MaterialTheme.colorScheme.error
++                )
++            ) {
++                Icon(
++                    Icons.Default.Logout,
++                    contentDescription = null,
++                    modifier = Modifier.padding(end = 8.dp)
++                )
++                Text("退出登录")
++            }
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/settings/SettingsViewModel.kt b/app/src/main/java/com/dsh/android/ui/settings/SettingsViewModel.kt
+new file mode 100644
+index 0000000..91546e2
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/settings/SettingsViewModel.kt
+@@ -0,0 +1,53 @@
++package com.dsh.android.ui.settings
++
++import androidx.lifecycle.ViewModel
++import androidx.lifecycle.viewModelScope
++import com.dsh.android.data.local.DshPreferences
++import com.dsh.android.domain.repository.DshRepository
++import dagger.hilt.android.lifecycle.HiltViewModel
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.StateFlow
++import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.flow.first
++import kotlinx.coroutines.launch
++import javax.inject.Inject
++
++data class SettingsUiState(
++    val serverAddress: String = "",
++    val username: String = "",
++    val isConnected: Boolean = false
++)
++
++@HiltViewModel
++class SettingsViewModel @Inject constructor(
++    private val repository: DshRepository,
++    private val preferences: DshPreferences
++) : ViewModel() {
++
++    private val _uiState = MutableStateFlow(SettingsUiState())
++    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
++
++    init {
++        loadSettings()
++    }
++
++    private fun loadSettings() {
++        viewModelScope.launch {
++            val serverAddress = preferences.serverAddress.first() ?: ""
++            val username = preferences.username.first() ?: ""
++            val isConnected = repository.isConnected.first()
++            _uiState.value = SettingsUiState(
++                serverAddress = serverAddress,
++                username = username,
++                isConnected = isConnected
++            )
++        }
++    }
++
++    fun logout() {
++        viewModelScope.launch {
++            repository.logout()
++            _uiState.value = _uiState.value.copy(isConnected = false)
++        }
++    }
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/theme/Color.kt b/app/src/main/java/com/dsh/android/ui/theme/Color.kt
+new file mode 100644
+index 0000000..a6319c0
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/theme/Color.kt
+@@ -0,0 +1,16 @@
++package com.dsh.android.ui.theme
++
++import androidx.compose.ui.graphics.Color
++
++val Blue80 = Color(0xFFBBDEFB)
++val BlueGrey80 = Color(0xFFCFD8DC)
++val Teal80 = Color(0xFFB2DFDB)
++
++val Blue40 = Color(0xFF1976D2)
++val BlueGrey40 = Color(0xFF546E7A)
++val Teal40 = Color(0xFF00796B)
++
++val SurfaceDark = Color(0xFF1E1E1E)
++val BackgroundDark = Color(0xFF121212)
++val SurfaceLight = Color(0xFFFAFAFA)
++val BackgroundLight = Color(0xFFF5F5F5)
+diff --git a/app/src/main/java/com/dsh/android/ui/theme/Theme.kt b/app/src/main/java/com/dsh/android/ui/theme/Theme.kt
+new file mode 100644
+index 0000000..be83b32
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/theme/Theme.kt
+@@ -0,0 +1,58 @@
++package com.dsh.android.ui.theme
++
++import android.app.Activity
++import android.os.Build
++import androidx.compose.foundation.isSystemInDarkTheme
++import androidx.compose.material3.*
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.SideEffect
++import androidx.compose.ui.graphics.toArgb
++import androidx.compose.ui.platform.LocalView
++import androidx.core.view.WindowCompat
++
++private val DarkColorScheme = darkColorScheme(
++    primary = Blue80,
++    secondary = BlueGrey80,
++    tertiary = Teal80,
++    surface = SurfaceDark,
++    background = BackgroundDark
++)
++
++private val LightColorScheme = lightColorScheme(
++    primary = Blue40,
++    secondary = BlueGrey40,
++    tertiary = Teal40,
++    surface = SurfaceLight,
++    background = BackgroundLight
++)
++
++@Composable
++fun DshAndroidTheme(
++    darkTheme: Boolean = isSystemInDarkTheme(),
++    dynamicColor: Boolean = true,
++    content: @Composable () -> Unit
++) {
++    val colorScheme = when {
++        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
++            val context = LocalView.current.context
++            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
++        }
++        darkTheme -> DarkColorScheme
++        else -> LightColorScheme
++    }
++
++    val view = LocalView.current
++    if (!view.isInEditMode) {
++        SideEffect {
++            val window = (view.context as Activity).window
++            window.statusBarColor = colorScheme.primary.toArgb()
++            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
++        }
++    }
++
++    MaterialTheme(
++        colorScheme = colorScheme,
++        typography = Typography,
++        content = content
++    )
++}
+diff --git a/app/src/main/java/com/dsh/android/ui/theme/Type.kt b/app/src/main/java/com/dsh/android/ui/theme/Type.kt
+new file mode 100644
+index 0000000..00c07ba
+--- /dev/null
++++ b/app/src/main/java/com/dsh/android/ui/theme/Type.kt
+@@ -0,0 +1,31 @@
++package com.dsh.android.ui.theme
++
++import androidx.compose.material3.Typography
++import androidx.compose.ui.text.TextStyle
++import androidx.compose.ui.text.font.FontFamily
++import androidx.compose.ui.text.font.FontWeight
++import androidx.compose.ui.unit.sp
++
++val Typography = Typography(
++    bodyLarge = TextStyle(
++        fontFamily = FontFamily.Default,
++        fontWeight = FontWeight.Normal,
++        fontSize = 16.sp,
++        lineHeight = 24.sp,
++        letterSpacing = 0.5.sp
++    ),
++    titleLarge = TextStyle(
++        fontFamily = FontFamily.Default,
++        fontWeight = FontWeight.Normal,
++        fontSize = 22.sp,
++        lineHeight = 28.sp,
++        letterSpacing = 0.sp
++    ),
++    labelSmall = TextStyle(
++        fontFamily = FontFamily.Default,
++        fontWeight = FontWeight.Medium,
++        fontSize = 11.sp,
++        lineHeight = 16.sp,
++        letterSpacing = 0.5.sp
++    )
++)
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+new file mode 100644
+index 0000000..9a16937
+--- /dev/null
++++ b/app/src/main/res/values/strings.xml
+@@ -0,0 +1,24 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string name="app_name">DSH Client</string>
++    <string name="connect">连接</string>
++    <string name="server_address">服务器地址</string>
++    <string name="username">用户名</string>
++    <string name="password">密码</string>
++    <string name="remember_password">记住密码</string>
++    <string name="connecting">连接中...</string>
++    <string name="connection_failed">连接失败</string>
++    <string name="sessions">会话</string>
++    <string name="new_session">新建会话</string>
++    <string name="settings">设置</string>
++    <string name="favorites">收藏</string>
++    <string name="workspace">工作区</string>
++    <string name="send">发送</string>
++    <string name="input_message">输入消息...</string>
++    <string name="approve">允许</string>
++    <string name="reject">拒绝</string>
++    <string name="tool_call">工具调用</string>
++    <string name="agent_running">Agent 运行中...</string>
++    <string name="logout">退出登录</string>
++    <string name="search_sessions">搜索会话...</string>
++</resources>
+diff --git a/app/src/main/res/values/themes.xml b/app/src/main/res/values/themes.xml
+new file mode 100644
+index 0000000..1baf25e
+--- /dev/null
++++ b/app/src/main/res/values/themes.xml
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <style name="Theme.DshAndroid" parent="android:Theme.Material.Light.NoActionBar">
++        <item name="android:statusBarColor">@android:color/transparent</item>
++        <item name="android:navigationBarColor">@android:color/transparent</item>
++    </style>
++</resources>
+diff --git a/build.gradle.kts b/build.gradle.kts
+new file mode 100644
+index 0000000..b7ee7ce
+--- /dev/null
++++ b/build.gradle.kts
+@@ -0,0 +1,5 @@
++plugins {
++    id("com.android.application") version "8.2.2" apply false
++    id("org.jetbrains.kotlin.android") version "1.9.22" apply false
++    id("com.google.dagger.hilt.android") version "2.50" apply false
++}
+diff --git a/gradle.properties b/gradle.properties
+new file mode 100644
+index 0000000..1a9e4fd
+--- /dev/null
++++ b/gradle.properties
+@@ -0,0 +1,3 @@
++android.useAndroidX=true
++kotlin.code.style=official
++android.nonTransitiveRClass=true
+diff --git a/gradle/wrapper/gradle-wrapper.jar b/gradle/wrapper/gradle-wrapper.jar
+new file mode 100644
+index 0000000..d64cd49
+Binary files /dev/null and b/gradle/wrapper/gradle-wrapper.jar differ
+diff --git a/gradle/wrapper/gradle-wrapper.properties b/gradle/wrapper/gradle-wrapper.properties
+new file mode 100644
+index 0000000..1af9e09
+--- /dev/null
++++ b/gradle/wrapper/gradle-wrapper.properties
+@@ -0,0 +1,7 @@
++distributionBase=GRADLE_USER_HOME
++distributionPath=wrapper/dists
++distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip
++networkTimeout=10000
++validateDistributionUrl=true
++zipStoreBase=GRADLE_USER_HOME
++zipStorePath=wrapper/dists
+diff --git a/gradlew b/gradlew
+new file mode 100755
+index 0000000..30166b2
+--- /dev/null
++++ b/gradlew
+@@ -0,0 +1,163 @@
++#!/bin/sh
++
++#
++# Copyright © 2015-2021 the original authors.
++#
++# Licensed under the Apache License, Version 2.0 (the "License");
++# you may not use this file except in compliance with the License.
++# You may obtain a copy of the License at
++#
++#      https://www.apache.org/licenses/LICENSE-2.0
++#
++# Unless required by applicable law or agreed to in writing, software
++# distributed under the License is distributed on an "AS IS" BASIS,
++# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++# See the License for the specific language governing permissions and
++# limitations under the License.
++#
++
++##############################################################################
++#
++#   Gradle start up script for POSIX generated by Gradle.
++#
++#   Important for running:
++#
++#   (1) You need a POSIX-compliant shell to run this script. If your /bin/sh is
++#       noncompliant, but you have some other compliant shell such as ksh or
++#       bash, then to run this script, type that shell name before the whole
++#       command line, like:
++#
++#           ksh Gradle
++#
++#       Busybox and similar reduced functionality shells and target
++#       temporary focusing, currentworking directories.
++#
++#   (2) You need a Java installation to run Gradle. If JAVA_HOME is not
++#       set, Gradle will use the Java from your PATH.
++#
++##############################################################################
++
++# Attempt to set APP_HOME
++
++# Resolve links: $0 may be a link
++app_path=$0
++
++# Need this for daisy-chained symlinks.
++while
++    APP_HOME=${app_path%"${app_path##*/}"}  # leaves a trailing /; empty if no leading path
++    [ -h "$app_path" ]
++do
++    ls=$( ls -ld -- "$app_path" )
++    link=${ls#*' -> '}
++    case $link in             #(
++      /*)   app_path=$link ;; #(
++      *)    app_path=$APP_HOME$link ;;
++    esac
++done
++
++# This is normally unused
++# shellcheck disable=SC2034
++APP_BASE_NAME=${0##*/}
++# Discard cd standard output in case $CDPATH is set (https://github.com/gradle/gradle/issues/25036)
++APP_HOME=$( cd "${APP_HOME:-./}" > /dev/null && pwd -P ) || exit
++
++# Use the maximum available, or set MAX_FD != -1 to use that value.
++MAX_FD=maximum
++
++warn () {
++    echo "$*"
++} >&2
++
++die () {
++    echo
++    echo "$*"
++    echo
++    exit 1
++} >&2
++
++# OS specific support (must be 'true' or 'false').
++cygwin=false
++msys=false
++darwin=false
++nonstop=false
++case "$( uname )" in                #(
++  CYGWIN* )         cygwin=true  ;; #(
++  Darwin* )         darwin=true  ;; #(
++  MSYS* | MINGW* )  msys=true   ;; #(
++  NonStop* )        nonstop=true ;;
++esac
++
++CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
++
++
++# Determine the Java command to use to start the JVM.
++if [ -n "$JAVA_HOME" ] ; then
++    if [ -x "$JAVA_HOME/jre/sh/java" ] ; then
++        # IBM's JDK on AIX uses strange locations for the executables
++        JAVACMD=$JAVA_HOME/jre/sh/java
++    else
++        JAVACMD=$JAVA_HOME/bin/java
++    fi
++    if [ ! -x "$JAVACMD" ] ; then
++        die "ERROR: JAVA_HOME is set to an invalid directory: $JAVA_HOME
++
++Please set the JAVA_HOME variable in your environment to match the
++location of your Java installation."
++    fi
++else
++    JAVACMD=java
++    if ! command -v java >/dev/null 2>&1
++    then
++        die "ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
++
++Please set the JAVA_HOME variable in your environment to match the
++location of your Java installation."
++    fi
++fi
++
++# Increase the maximum file descriptors if we can.
++if ! "$cygwin" && ! "$darwin" && ! "$nonstop" ; then
++    case $MAX_FD in #(
++      max*)
++        # In POSIX sh, ulimit -H is undefined. That's why the result is checked to see if it worked.
++        # shellcheck disable=SC2039,SC3045
++        MAX_FD=$( ulimit -H -n ) ||
++            warn "Could not query maximum file descriptor limit"
++      ;;
++    esac
++    case $MAX_FD in  #(
++      '' | soft) :;; #(
++      *)
++        # In POSIX sh, ulimit -n is undefined. That's why the result is checked to see if it worked.
++        # shellcheck disable=SC2039,SC3045
++        ulimit -n "$MAX_FD" ||
++            warn "Could not set maximum file descriptor limit to $MAX_FD"
++      ;;
++    esac
++fi
++
++# Collect all arguments for the java command, stracks the style://args are quoted
++# For Cygwin or MSYS, switch paths to Windows format before running java
++if "$cygwin" || "$msys" ; then
++    APP_HOME=$( cygpath --path --mixed "$APP_HOME" )
++    CLASSPATH=$( cygpath --path --mixed "$CLASSPATH" )
++
++    JAVACMD=$( cygpath --unix "$JAVACMD" )
++
++fi
++
++# Collect all arguments for the java command;
++#   * $DEFAULT_JVM_OPTS, $JAVA_OPTS, and $GRADLE_OPTS can contain fragments of
++#     shell script including quotes and/or backslashes, so put them in
++#     temporary variables to preserve quoting.
++#   * Put everything else in double quotes to avoid unnecessary whitespace.
++set -- \
++        "-Dorg.gradle.appname=$APP_BASE_NAME" \
++        -classpath "$CLASSPATH" \
++        org.gradle.wrapper.GradleWrapperMain \
++        "$@"
++
++# Stop when "xeli" is on, by default xeli would slow it down
++unset CYGWIN_CMD
++
++exec "$JAVACMD" "$@"
+diff --git a/settings.gradle.kts b/settings.gradle.kts
+new file mode 100644
+index 0000000..afc896f
+--- /dev/null
++++ b/settings.gradle.kts
+@@ -0,0 +1,15 @@
++pluginManagement {
++    repositories {
++        google()
++        mavenCentral()
++        gradlePluginPortal()
++    }
++}
++dependencyResolutionManagement {
++    repositories {
++        google()
++        mavenCentral()
++    }
++}
++rootProject.name = "dsh-android"
++include(":app")

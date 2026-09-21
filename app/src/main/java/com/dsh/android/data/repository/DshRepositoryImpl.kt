@@ -1,5 +1,6 @@
 package com.dsh.android.data.repository
 
+import android.net.Uri
 import com.dsh.android.data.local.DshPreferences
 import com.dsh.android.data.remote.DshApi
 import com.dsh.android.data.remote.DshWebSocketClient
@@ -30,7 +31,14 @@ class DshRepositoryImpl @Inject constructor(
             preferences.saveServerAddress(serverAddress)
             val response = api.login(LoginRequest(username, password))
             if (response.ok) {
-                preferences.saveSessionToken("authenticated")
+                // Extract token from redirect URL (format: "/?token=xxx")
+                val token = response.redirect?.let { redirect ->
+                    Uri.parse(redirect).getQueryParameter("token")
+                }
+                if (token.isNullOrBlank()) {
+                    return Result.failure(Exception("No token received from server"))
+                }
+                preferences.saveSessionToken(token)
                 preferences.saveCredentials(username, password, true)
                 Result.success(Unit)
             } else {
