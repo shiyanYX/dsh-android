@@ -15,7 +15,10 @@ data class ChatUiState(
     val agentStatus: AgentStatus = AgentStatus.IDLE,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val inputText: String = ""
+    val inputText: String = "",
+    val availableModels: List<DshModel> = emptyList(),
+    val selectedModel: String? = null,
+    val showModelSelector: Boolean = false
 )
 
 @HiltViewModel
@@ -30,11 +33,27 @@ class ChatViewModel @Inject constructor(
 
     init {
         observeWebSocketEvents()
+        loadModels()
     }
 
     fun setSession(sessionId: String) {
         currentSessionId = sessionId
         repository.connectWebSocket(sessionId)
+    }
+
+    private fun loadModels() {
+        viewModelScope.launch {
+            val result = repository.getModels()
+            result.fold(
+                onSuccess = { models ->
+                    _uiState.value = _uiState.value.copy(
+                        availableModels = models,
+                        selectedModel = models.firstOrNull()?.id
+                    )
+                },
+                onFailure = { /* Models unavailable, use default */ }
+            )
+        }
     }
 
     private fun observeWebSocketEvents() {
@@ -71,6 +90,19 @@ class ChatViewModel @Inject constructor(
 
     fun onInputChange(text: String) {
         _uiState.value = _uiState.value.copy(inputText = text)
+    }
+
+    fun toggleModelSelector() {
+        _uiState.value = _uiState.value.copy(
+            showModelSelector = !_uiState.value.showModelSelector
+        )
+    }
+
+    fun selectModel(modelId: String) {
+        _uiState.value = _uiState.value.copy(
+            selectedModel = modelId,
+            showModelSelector = false
+        )
     }
 
     fun sendMessage() {
