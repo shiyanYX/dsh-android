@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.dsh.android.domain.model.Message
 import com.dsh.android.domain.model.MessageRole
+import com.mikepenz.markdown.coil3.M3MarkdownText
+import com.mikepenz.markdown.coil3.Coil3ImageLoader
 
 @Composable
 fun MessageBubble(
@@ -36,16 +38,20 @@ fun MessageBubble(
             },
             modifier = Modifier.widthIn(max = 300.dp)
         ) {
-            Text(
-                text = message.content,
-                modifier = Modifier.padding(12.dp),
-                color = if (isUser) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                style = MaterialTheme.typography.bodyMedium
-            )
+            if (isUser) {
+                Text(
+                    text = message.content,
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else {
+                M3MarkdownText(
+                    markdown = message.content,
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
