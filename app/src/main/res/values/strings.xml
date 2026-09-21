@@ -1,3 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DSH Android</string>
+    <string name="app_name">DSH Client</string>
+    <string name="connect">连接</string>
+    <string name="server_address">服务器地址</string>
+    <string name="username">用户名</string>
+    <string name="password">密码</string>
+    <string name="remember_password">记住密码</string>
+    <string name="connecting">连接中...</string>
+    <string name="connection_failed">连接失败</string>
+    <string name="sessions">会话</string>
+    <string name="new_session">新建会话</string>
+    <string name="settings">设置</string>
+    <string name="favorites">收藏</string>
+    <string name="workspace">工作区</string>
+    <string name="send">发送</string>
+    <string name="input_message">输入消息...</string>
+    <string name="approve">允许</string>
+    <string name="reject">拒绝</string>
+    <string name="tool_call">工具调用</string>
+    <string name="agent_running">Agent 运行中...</string>
+    <string name="logout">退出登录</string>
+    <string name="search_sessions">搜索会话...</string>
 </resources>
