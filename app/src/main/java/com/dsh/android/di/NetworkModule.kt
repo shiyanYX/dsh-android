@@ -1,5 +1,6 @@
 package com.dsh.android.di
 
+import com.dsh.android.BuildConfig
 import com.dsh.android.data.local.DshPreferences
 import com.dsh.android.data.remote.AuthInterceptor
 import com.dsh.android.data.remote.DshApi
@@ -25,17 +26,20 @@ object NetworkModule {
         authInterceptor: AuthInterceptor,
         dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor
     ): OkHttpClient {
-        val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .addInterceptor(dynamicBaseUrlInterceptor) // Rewrite URL first
             .addInterceptor(authInterceptor)
-            .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
-            .build()
+
+        if (BuildConfig.IS_DEBUG) {
+            val logging = HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            }
+            builder.addInterceptor(logging)
+        }
+
+        return builder.build()
     }
 
     @Provides
