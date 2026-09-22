@@ -24,7 +24,19 @@ android {
         buildConfigField("boolean", "IS_DEBUG", "${project.findProperty("isDebug") ?: "false"}")
     }
 
+    signingConfigs {
+        create("localDebug") {
+            storeFile = file("../debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("localDebug")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
