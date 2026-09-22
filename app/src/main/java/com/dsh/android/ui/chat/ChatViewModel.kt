@@ -9,6 +9,12 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class TokenStats(
+    val turns: Int = 0,
+    val steps: Int = 0,
+    val ttft: Long = 0 // time to first token in ms
+)
+
 data class ChatUiState(
     val messages: List<Message> = emptyList(),
     val toolCalls: List<ToolCall> = emptyList(),
@@ -18,7 +24,10 @@ data class ChatUiState(
     val inputText: String = "",
     val availableModels: List<DshModel> = emptyList(),
     val selectedModel: String? = null,
-    val showModelSelector: Boolean = false
+    val showModelSelector: Boolean = false,
+    val tokenStats: TokenStats = TokenStats(),
+    val selectedMessageId: String? = null, // for context menu
+    val showMessageActions: Boolean = false
 )
 
 @HiltViewModel
@@ -30,6 +39,7 @@ class ChatViewModel @Inject constructor(
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     private var currentSessionId: String? = null
+    private var sendTimestamp: Long = 0L
 
     init {
         observeWebSocketEvents()
@@ -67,14 +77,26 @@ class ChatViewModel @Inject constructor(
                         _uiState.value = _uiState.value.copy(error = "连接断开")
                     }
                     is WebSocketEvent.MessageReceived -> {
+                        val ttft = if (sendTimestamp > 0) System.currentTimeMillis() - sendTimestamp else 0L
                         val messages = _uiState.value.messages + event.message
-                        _uiState.value = _uiState.value.copy(messages = messages)
+                        val stats = _uiState.value.tokenStats.copy(
+                            turns = _uiState.value.tokenStats.turns + 1,
+                            ttft = ttft
+                        )
+                        _uiState.value = _uiState.value.copy(
+                            messages = messages,
+                            tokenStats = stats
+                        )
                     }
                     is WebSocketEvent.ToolCallReceived -> {
                         val toolCalls = _uiState.value.toolCalls + event.toolCall
+                        val stats = _uiState.value.tokenStats.copy(
+                            steps = _uiState.value.tokenStats.steps + 1
+                        )
                         _uiState.value = _uiState.value.copy(
                             toolCalls = toolCalls,
-                            agentStatus = AgentStatus.WAITING_CONFIRMATION
+                            agentStatus = AgentStatus.WAITING_CONFIRMATION,
+                            tokenStats = stats
                         )
                     }
                     is WebSocketEvent.AgentStatusChanged -> {
@@ -108,6 +130,8 @@ class ChatViewModel @Inject constructor(
     fun sendMessage() {
         val text = _uiState.value.inputText.trim()
         if (text.isBlank() || currentSessionId == null) return
+
+        sendTimestamp = System.currentTimeMillis()
 
         val userMessage = Message(
             id = System.currentTimeMillis().toString(),
@@ -143,6 +167,74 @@ class ChatViewModel @Inject constructor(
 
         viewModelScope.launch {
             repository.confirmToolCall(currentSessionId!!, callId, approved)
+        }
+    }
+
+    // Message actions
+    fun showMessageActions(messageId: String) {
+        _uiState.value = _uiState.value.copy(
+            selectedMessageId = messageId,
+            showMessageActions = true
+        )
+    }
+
+    fun hideMessageActions() {
+        _uiState.value = _uiState.value.copy(
+            selectedMessageId = null,
+            showMessageActions = false
+        )
+    }
+
+    fun deleteMessage(messageId: String) {
+        val messages = _uiState.value.messages.filter { it.id != messageId }
+        _uiState.value = _uiState.value.copy(
+            messages = messages,
+            selectedMessageId = null,
+            showMessageActions = false
+        )
+    }
+
+    fun regenerateMessage(messageId: String) {
+        // Find the user message that preceded this assistant message
+        val messages = _uiState.value.messages
+        val index = messages.indexOfFirst { it.id == messageId }
+        if (index < 0) return
+
+        // Find the previous user message
+        var userMessage: Message? = null
+        for (i in (0 until index).reversed()) {
+            if (messages[i].role == MessageRole.USER) {
+                userMessage = messages[i]
+                break
+            }
+        }
+        if (userMessage == null) return
+
+        // Remove all messages from this assistant message onward
+        val trimmedMessages = messages.subList(0, index).toList()
+
+        _uiState.value = _uiState.value.copy(
+            messages = trimmedMessages,
+            agentStatus = AgentStatus.RUNNING,
+            selectedMessageId = null,
+            showMessageActions = false
+        )
+
+        // Resend the user message
+        sendTimestamp = System.currentTimeMillis()
+        viewModelScope.launch {
+            repository.sendMessage(currentSessionId!!, userMessage.content)
+        }
+    }
+
+    fun copyMessageContent(messageId: String): String? {
+        return _uiState.value.messages.find { it.id == messageId }?.content
+    }
+
+    fun stopAgent() {
+        viewModelScope.launch {
+            repository.sendMessage(currentSessionId!!, "/stop")
+            _uiState.value = _uiState.value.copy(agentStatus = AgentStatus.IDLE)
         }
     }
 

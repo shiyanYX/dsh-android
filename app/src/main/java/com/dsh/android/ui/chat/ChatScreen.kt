@@ -1,21 +1,25 @@
 package com.dsh.android.ui.chat
 
-import androidx.compose.foundation.clickable
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dsh.android.domain.model.AgentStatus
+import com.dsh.android.domain.model.MessageRole
 import com.dsh.android.ui.chat.components.ChatInput
+import com.dsh.android.ui.chat.components.MessageActionsPopup
 import com.dsh.android.ui.chat.components.MessageBubble
 import com.dsh.android.ui.chat.components.ToolCallCard
 
@@ -28,6 +32,8 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
 
     LaunchedEffect(sessionId) {
         viewModel.setSession(sessionId)
@@ -58,34 +64,51 @@ fun ChatScreen(
         }
     }
 
+    // Message actions popup
+    if (uiState.showMessageActions && uiState.selectedMessageId != null) {
+        val selectedMessage = uiState.messages.find { it.id == uiState.selectedMessageId }
+        if (selectedMessage != null) {
+            MessageActionsPopup(
+                isUserMessage = selectedMessage.role == MessageRole.USER,
+                onCopy = {
+                    val content = viewModel.copyMessageContent(uiState.selectedMessageId!!)
+                    if (content != null) {
+                        clipboardManager.setText(AnnotatedString(content))
+                        Toast.makeText(context, "已复制", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                onRegenerate = {
+                    viewModel.regenerateMessage(uiState.selectedMessageId!!)
+                },
+                onDelete = {
+                    viewModel.deleteMessage(uiState.selectedMessageId!!)
+                },
+                onDismiss = { viewModel.hideMessageActions() }
+            )
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("会话") },
+                title = {
+                    Column {
+                        Text("会话", style = MaterialTheme.typography.titleMedium)
+                        if (uiState.tokenStats.turns > 0) {
+                            Text(
+                                text = "轮次: ${uiState.tokenStats.turns} | 步骤: ${uiState.tokenStats.steps} | 首Token: ${uiState.tokenStats.ttft}ms",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "返回")
                     }
                 },
                 actions = {
-                    // Model selector button
-                    Row(
-                        modifier = Modifier
-                            .clickable { viewModel.toggleModelSelector() }
-                            .padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = uiState.selectedModel ?: "模型",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Icon(
-                            Icons.Default.ArrowDropDown,
-                            contentDescription = "选择模型",
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
                     // Agent status indicator
                     if (uiState.agentStatus == AgentStatus.RUNNING) {
                         CircularProgressIndicator(
@@ -101,7 +124,13 @@ fun ChatScreen(
             ChatInput(
                 value = uiState.inputText,
                 onValueChange = viewModel::onInputChange,
-                onSend = viewModel::sendMessage
+                onSend = viewModel::sendMessage,
+                selectedModel = uiState.selectedModel,
+                availableModels = uiState.availableModels.map { it.id to it.name },
+                onModelClick = { viewModel.toggleModelSelector() },
+                onPaste = { viewModel.onInputChange(it) },
+                onStopAgent = { viewModel.stopAgent() },
+                isAgentRunning = uiState.agentStatus == AgentStatus.RUNNING
             )
         }
     ) { padding ->
@@ -123,9 +152,12 @@ fun ChatScreen(
                 )
             }
 
-            // Messages
+            // Messages with long-press support
             items(uiState.messages) { message ->
-                MessageBubble(message = message)
+                MessageBubble(
+                    message = message,
+                    onLongClick = { viewModel.showMessageActions(message.id) }
+                )
             }
         }
     }

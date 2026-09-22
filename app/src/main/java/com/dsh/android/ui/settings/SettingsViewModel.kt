@@ -12,10 +12,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class ThemeMode { LIGHT, DARK, SYSTEM }
+enum class FontSize(val label: String) { SMALL("小"), MEDIUM("中"), LARGE("大") }
+
 data class SettingsUiState(
     val serverAddress: String = "",
     val username: String = "",
-    val isConnected: Boolean = false
+    val isConnected: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val fontSize: FontSize = FontSize.MEDIUM
 )
 
 @HiltViewModel
@@ -36,11 +41,29 @@ class SettingsViewModel @Inject constructor(
             val serverAddress = preferences.serverAddress.first() ?: ""
             val username = preferences.username.first() ?: ""
             val isConnected = repository.isConnected.first()
+            val themeModeOrdinal = preferences.getThemeMode()
+            val fontSizeOrdinal = preferences.getFontSize()
             _uiState.value = SettingsUiState(
                 serverAddress = serverAddress,
                 username = username,
-                isConnected = isConnected
+                isConnected = isConnected,
+                themeMode = ThemeMode.entries.getOrElse(themeModeOrdinal) { ThemeMode.SYSTEM },
+                fontSize = FontSize.entries.getOrElse(fontSizeOrdinal) { FontSize.MEDIUM }
             )
+        }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch {
+            preferences.saveThemeMode(mode.ordinal)
+            _uiState.value = _uiState.value.copy(themeMode = mode)
+        }
+    }
+
+    fun setFontSize(size: FontSize) {
+        viewModelScope.launch {
+            preferences.saveFontSize(size.ordinal)
+            _uiState.value = _uiState.value.copy(fontSize = size)
         }
     }
 

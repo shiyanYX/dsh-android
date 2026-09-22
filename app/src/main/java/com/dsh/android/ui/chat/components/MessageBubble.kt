@@ -1,11 +1,11 @@
 package com.dsh.android.ui.chat.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -14,13 +14,14 @@ import androidx.compose.ui.unit.sp
 import com.dsh.android.domain.model.Message
 import com.dsh.android.domain.model.MessageRole
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(
     message: Message,
+    isUser: Boolean = message.role == MessageRole.USER,
+    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val isUser = message.role == MessageRole.USER
-
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
@@ -37,9 +38,19 @@ fun MessageBubble(
             } else {
                 MaterialTheme.colorScheme.surfaceVariant
             },
-            modifier = Modifier.widthIn(max = 300.dp)
+            modifier = Modifier
+                .widthIn(max = 300.dp)
+                .then(
+                    if (onLongClick != null) {
+                        Modifier.combinedClickable(
+                            onClick = {},
+                            onLongClick = onLongClick
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
         ) {
-            // Basic code-aware text rendering for assistant messages
             val textStyle = if (!isUser && message.content.contains("```")) {
                 TextStyle(
                     fontFamily = FontFamily.Monospace,

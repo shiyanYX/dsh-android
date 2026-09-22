@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.dsh.android.ui.chat.ChatScreen
 import com.dsh.android.ui.connection.ConnectionScreen
+import com.dsh.android.ui.favorites.FavoritesScreen
 import com.dsh.android.ui.sessions.SessionListScreen
 import com.dsh.android.ui.settings.SettingsScreen
 
@@ -16,6 +17,7 @@ sealed class Screen(val route: String) {
         fun createRoute(sessionId: String) = "chat/$sessionId"
     }
     object Settings : Screen("settings")
+    object Favorites : Screen("favorites")
 }
 
 @Composable
@@ -44,6 +46,9 @@ fun NavGraph(
                 },
                 onSettingsClick = {
                     navController.navigate(Screen.Settings.route)
+                },
+                onFavoritesClick = {
+                    navController.navigate(Screen.Favorites.route)
                 }
             )
         }
@@ -63,6 +68,14 @@ fun NavGraph(
                     navController.navigate(Screen.Connection.route) {
                         popUpTo(0) { inclusive = true }
                     }
+                }
+            )
+        }
+
+        composable(Screen.Favorites.route) {
+            FavoritesScreen(
+                onSessionClick = { sessionId, _ ->
+                    navController.navigate(Screen.Chat.createRoute(sessionId))
                 }
             )
         }

@@ -1,20 +1,28 @@
 package com.dsh.android.ui.sessions
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dsh.android.domain.model.Session
+import com.dsh.android.data.local.DshPreferences
+import com.dsh.android.domain.model.Favorite
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -23,15 +31,20 @@ import java.util.*
 fun SessionListScreen(
     onSessionClick: (String) -> Unit,
     onSettingsClick: () -> Unit,
+    onFavoritesClick: () -> Unit = {},
     viewModel: SessionListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("工作区") },
                 actions = {
+                    IconButton(onClick = onFavoritesClick) {
+                        Icon(Icons.Default.Favorite, contentDescription = "收藏")
+                    }
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = "设置")
                     }
@@ -87,7 +100,10 @@ fun SessionListScreen(
                         items(uiState.sessions) { session ->
                             SessionItem(
                                 session = session,
-                                onClick = { onSessionClick(session.id) }
+                                onClick = { onSessionClick(session.id) },
+                                onLongClick = {
+                                    // Show session actions
+                                }
                             )
                         }
                     }
@@ -97,15 +113,20 @@ fun SessionListScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SessionItem(
     session: Session,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
