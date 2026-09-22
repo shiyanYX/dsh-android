@@ -14,6 +14,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -40,6 +41,18 @@ object NetworkModule {
         }
 
         return builder.build()
+    }
+
+    /** Plain OkHttpClient without auth/dynamic-base interceptors — used for cookie exchange after login. */
+    @Provides
+    @Singleton
+    @Named("plain")
+    fun providePlainOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .followRedirects(false) // We need to handle the redirect manually
+            .build()
     }
 
     @Provides
