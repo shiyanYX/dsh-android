@@ -47,6 +47,7 @@ class DshWebSocketClient @Inject constructor(
         coroutineScope.launch {
             val serverAddress = preferences.serverAddress.first()
             val sessionToken = preferences.sessionToken.first()
+            val coreCookie = preferences.coreCookie.first()
 
             if (serverAddress == null || sessionToken == null) {
                 withContext(Dispatchers.Main) {
@@ -56,9 +57,16 @@ class DshWebSocketClient @Inject constructor(
             }
 
             val wsUrl = serverAddress.replace("http", "ws") + "/api/remote.mux"
+            val cookieHeader = buildString {
+                append("dsh_wua_session=$sessionToken")
+                if (!coreCookie.isNullOrBlank()) {
+                    append("; $coreCookie")
+                }
+            }
+
             val request = Request.Builder()
                 .url(wsUrl)
-                .addHeader("Cookie", "dsh_wua_session=$sessionToken")
+                .addHeader("Cookie", cookieHeader)
                 .build()
 
             webSocket = client.newWebSocket(request, object : WebSocketListener() {

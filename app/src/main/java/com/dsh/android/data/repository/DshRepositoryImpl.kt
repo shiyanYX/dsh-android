@@ -1,43 +1,26 @@
 package com.dsh.android.data.repository
 
-import android.net.Uri
 import android.util.Log
 import com.dsh.android.data.local.DshPreferences
-import com.dsh.android.data.remote.DshApi
+import com.dsh.android.data.remote.DshRpcClient
 import com.dsh.android.data.remote.DshWebSocketClient
-import com.dsh.android.data.remote.model.CreateSessionRequest
-import com.dsh.android.data.remote.model.LoginRequest
 import com.dsh.android.domain.model.*
 import com.dsh.android.domain.repository.DshRepository
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import javax.inject.Inject
-import javax.inject.Named
 import javax.inject.Singleton
 
 private const val TAG = "DshRepository"
 
-/** Map DSH server error codes to user-friendly messages (aligned with web client). */
-private fun friendlyError(error: String?): String = when (error) {
-    "invalid" -> "用户名或密码错误"
-    "rate-limited" -> "尝试次数过多，请一分钟后重试"
-    "setup-token-required" -> "初始化令牌缺失或不正确"
-    "weak-password" -> "密码强度不足：至少 8 位，需包含大小写字母、数字和特殊符号"
-    "username-invalid" -> "用户名需为 3-32 位字母、数字、下划线或连字符"
-    "not-configured" -> "凭据尚未配置，请刷新页面后重新创建"
-    "already-configured" -> "认证已启用，请使用登录模式"
-    else -> "登录失败：${error ?: "未知错误"}"
-}
-
 @Singleton
 class DshRepositoryImpl @Inject constructor(
-    private val api: DshApi,
+    private val rpcClient: DshRpcClient,
     private val preferences: DshPreferences,
-    private val wsClient: DshWebSocketClient,
-    @Named("plain") private val plainHttpClient: OkHttpClient
+    private val wsClient: DshWebSocketClient
 ) : DshRepository {
 
     private val _webSocketEvents = MutableSharedFlow<WebSocketEvent>(replay = 0)
@@ -50,66 +33,11 @@ class DshRepositoryImpl @Inject constructor(
             preferences.saveServerAddress(serverAddress)
             Log.d(TAG, "Logging in to $serverAddress as $username")
 
-            val response = api.login(LoginRequest(username, password))
-            if (response.ok) {
-                // Extract redirect URL with launch token (format: "/?token=xxx")
-                val redirect = response.redirect
-                if (redirect.isNullOrBlank()) {
-                    return Result.failure(Exception("服务器未返回重定向地址"))
-                }
-
-                val token = Uri.parse(redirect).getQueryParameter("token")
-                if (token.isNullOrBlank()) {
-                    return Result.failure(Exception("服务器未返回有效令牌"))
-                }
-
-                Log.d(TAG, "Login OK, exchanging token for session cookie via redirect: $redirect")
-
-                // Step 2: Follow the redirect to get the dsh_wua_session cookie
-                // The web client does: location.href = redirect
-                // This triggers the core's token→cookie exchange
-                val baseUrl = serverAddress.trimEnd('/')
-                val fullRedirectUrl = if (redirect.startsWith("http")) {
-                    redirect
-                } else {
-                    "$baseUrl$redirect"
-                }
-
-                try {
-                    val cookieRequest = Request.Builder()
-                        .url(fullRedirectUrl)
-                        .get()
-                        .build()
-                    val cookieResponse = plainHttpClient.newCall(cookieRequest).execute()
-                    val setCookies = cookieResponse.headers("Set-Cookie")
-                    Log.d(TAG, "Cookie exchange: ${cookieResponse.code}, Set-Cookie count: ${setCookies.size}")
-
-                    // Extract dsh_wua_session cookie
-                    val sessionCookie = setCookies
-                        .filter { it.startsWith("dsh_wua_session=") }
-                        .map { it.split(";").first().removePrefix("dsh_wua_session=") }
-                        .firstOrNull()
-
-                    if (sessionCookie != null) {
-                        Log.d(TAG, "Got session cookie: ${sessionCookie.take(20)}...")
-                        preferences.saveSessionToken(sessionCookie)
-                    } else {
-                        // Fallback: use the launch token directly
-                        Log.w(TAG, "No Set-Cookie in response, using launch token directly")
-                        preferences.saveSessionToken(token)
-                    }
-                    cookieResponse.close()
-                } catch (e: Exception) {
-                    Log.w(TAG, "Cookie exchange failed (${e.message}), using launch token")
-                    preferences.saveSessionToken(token)
-                }
-
+            val result = rpcClient.authenticate(serverAddress, username, password)
+            if (result.isSuccess) {
                 preferences.saveCredentials(username, password, true)
-                Result.success(Unit)
-            } else {
-                Log.w(TAG, "Login failed: ${response.error}")
-                Result.failure(Exception(friendlyError(response.error)))
             }
+            result
         } catch (e: Exception) {
             Log.e(TAG, "Login exception", e)
             Result.failure(Exception("连接失败：${e.localizedMessage ?: "网络错误"}"))
@@ -123,47 +51,129 @@ class DshRepositoryImpl @Inject constructor(
 
     override suspend fun getSessions(): Result<List<Session>> {
         return try {
-            val sessions = api.getSessions().map { it.toDomain() }
+            val result = rpcClient.call("session", "list", JsonObject())
+            val sessionsJson = result.getAsJsonArray("sessions")
+                ?: return Result.success(emptyList())
+
+            val sessions = sessionsJson.mapNotNull { element ->
+                try {
+                    val obj = element.asJsonObject
+                    val sessionId = obj.get("sessionId")?.asString ?: return@mapNotNull null
+                    val updatedAt = obj.get("updatedAt")?.asLong ?: 0L
+                    val running = obj.get("running")?.asBoolean ?: false
+                    val projections = obj.getAsJsonObject("projections")
+                    val values = projections?.getAsJsonObject("values")
+                    val title = values?.get("title")?.asString ?: sessionId
+
+                    // Extract model from modelSelection
+                    val modelSelection = values?.getAsJsonObject("modelSelection")
+                    val lastUsed = modelSelection?.getAsJsonObject("lastUsed")
+                    val model = lastUsed?.get("model")?.asString
+
+                    Session(
+                        id = sessionId,
+                        title = title,
+                        createdAt = updatedAt, // DSH only provides updatedAt
+                        updatedAt = updatedAt,
+                        model = model
+                    )
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to parse session: ${e.message}")
+                    null
+                }
+            }
+
+            Log.d(TAG, "Got ${sessions.size} sessions")
             Result.success(sessions)
         } catch (e: Exception) {
             Log.e(TAG, "getSessions failed", e)
-            Result.failure(Exception("获取会话列表失败：${e.localizedMessage}"))
+            Result.failure(Exception("获取会话列表失败：${e.message}"))
         }
     }
 
     override suspend fun createSession(title: String): Result<Session> {
         return try {
-            val session = api.createSession(CreateSessionRequest(title)).toDomain()
+            val args = JsonObject().apply {
+                addProperty("path", "")
+            }
+            val result = rpcClient.call("session", "create", args)
+
+            val sessionId = result.get("sessionId")?.asString
+                ?: throw Exception("No sessionId in response")
+
+            val session = Session(
+                id = sessionId,
+                title = title.ifBlank { sessionId },
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
+                model = null
+            )
             Result.success(session)
         } catch (e: Exception) {
-            Result.failure(Exception("创建会话失败：${e.localizedMessage}"))
+            Log.e(TAG, "createSession failed", e)
+            Result.failure(Exception("创建会话失败：${e.message}"))
         }
     }
 
     override suspend fun deleteSession(sessionId: String): Result<Unit> {
         return try {
-            api.deleteSession(sessionId)
+            rpcClient.call("session", "cancel", JsonObject().apply {
+                addProperty("sessionId", sessionId)
+            })
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(Exception("删除会话失败：${e.localizedMessage}"))
+            Log.e(TAG, "deleteSession failed", e)
+            Result.failure(Exception("删除会话失败：${e.message}"))
         }
     }
 
     override suspend fun searchSessions(query: String): Result<List<Session>> {
+        // DSH doesn't have a dedicated search endpoint; filter locally
         return try {
-            val sessions = api.searchSessions(query).map { it.toDomain() }
-            Result.success(sessions)
+            val allSessions = getSessions().getOrElse { emptyList() }
+            val filtered = if (query.isBlank()) allSessions
+            else allSessions.filter {
+                it.title.contains(query, ignoreCase = true) ||
+                    it.id.contains(query, ignoreCase = true)
+            }
+            Result.success(filtered)
         } catch (e: Exception) {
-            Result.failure(Exception("搜索会话失败：${e.localizedMessage}"))
+            Result.failure(Exception("搜索会话失败：${e.message}"))
         }
     }
 
     override suspend fun getModels(): Result<List<DshModel>> {
         return try {
-            val models = api.getModels().map { it.toDomain() }
+            val result = rpcClient.call("session", "modelCatalog", JsonObject())
+            // The model catalog response structure: {"adapters":[...]}
+            val adapters = result.getAsJsonArray("adapters") ?: return Result.success(emptyList())
+
+            val models = mutableListOf<DshModel>()
+            for (adapter in adapters) {
+                val adapterObj = adapter.asJsonObject
+                val adapterId = adapterObj.get("id")?.asString ?: continue
+                val modelsArray = adapterObj.getAsJsonArray("models") ?: continue
+
+                for (modelElement in modelsArray) {
+                    val modelObj = modelElement.asJsonObject
+                    val modelId = modelObj.get("id")?.asString ?: continue
+                    val displayName = modelObj.get("displayName")?.asString
+                        ?: modelObj.get("name")?.asString
+                        ?: modelId
+
+                    models.add(DshModel(
+                        id = "$adapterId/$modelId",
+                        name = displayName,
+                        isAvailable = true
+                    ))
+                }
+            }
+
+            Log.d(TAG, "Got ${models.size} models from ${adapters.size()} adapters")
             Result.success(models)
         } catch (e: Exception) {
-            Result.failure(Exception("获取模型列表失败：${e.localizedMessage}"))
+            Log.e(TAG, "getModels failed", e)
+            Result.failure(Exception("获取模型列表失败：${e.message}"))
         }
     }
 
@@ -172,7 +182,7 @@ class DshRepositoryImpl @Inject constructor(
             wsClient.sendMessage(sessionId, content)
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(Exception("发送消息失败：${e.localizedMessage}"))
+            Result.failure(Exception("发送消息失败：${e.message}"))
         }
     }
 
@@ -181,7 +191,7 @@ class DshRepositoryImpl @Inject constructor(
             wsClient.confirmToolCall(sessionId, callId, approved)
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(Exception("工具确认失败：${e.localizedMessage}"))
+            Result.failure(Exception("工具确认失败：${e.message}"))
         }
     }
 

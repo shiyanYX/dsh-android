@@ -26,12 +26,19 @@ class AuthInterceptor @Inject constructor(
         }
 
         val sessionToken = runBlocking { preferences.sessionToken.first() }
+        val coreCookie = runBlocking { preferences.coreCookie.first() }
 
         return if (sessionToken != null) {
+            val cookieHeader = buildString {
+                append("dsh_wua_session=$sessionToken")
+                if (!coreCookie.isNullOrBlank()) {
+                    append("; $coreCookie")
+                }
+            }
             val request = original.newBuilder()
-                .addHeader("Cookie", "dsh_wua_session=$sessionToken")
+                .addHeader("Cookie", cookieHeader)
                 .build()
-            Log.d(TAG, "Request: ${original.method} $path with session cookie")
+            Log.d(TAG, "Request: ${original.method} $path with cookies")
             chain.proceed(request)
         } else {
             Log.w(TAG, "Request: ${original.method} $path WITHOUT session token!")

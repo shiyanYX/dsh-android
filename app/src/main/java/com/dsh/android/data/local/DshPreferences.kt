@@ -41,6 +41,7 @@ class DshPreferences @Inject constructor(
 
     // Session token and password (sensitive - use encrypted prefs)
     val sessionToken: Flow<String?> = flow { emit(encryptedPrefs.getString("session_token", null)) }
+    val coreCookie: Flow<String?> = flow { emit(encryptedPrefs.getString("core_cookie", null)) }
     val password: Flow<String?> = flow { emit(encryptedPrefs.getString("password", null)) }
 
     // Favorites
@@ -74,8 +75,13 @@ class DshPreferences @Inject constructor(
         encryptedPrefs.edit().putString("session_token", token).apply()
     }
 
+    suspend fun saveCoreCookie(cookie: String) {
+        encryptedPrefs.edit().putString("core_cookie", cookie).apply()
+    }
+
     suspend fun clearSession() {
         encryptedPrefs.edit().remove("session_token").apply()
+        encryptedPrefs.edit().remove("core_cookie").apply()
     }
 
     suspend fun clearAll() {
