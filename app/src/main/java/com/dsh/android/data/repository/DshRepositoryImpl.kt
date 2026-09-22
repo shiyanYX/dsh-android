@@ -52,7 +52,9 @@ class DshRepositoryImpl @Inject constructor(
     override suspend fun getSessions(): Result<List<Session>> {
         return try {
             val result = rpcClient.call("session", "list", JsonObject())
-            val sessionsJson = result.getAsJsonArray("sessions")
+            // Response: {items: [{sessionId, updatedAt, running, projections: {values: {title, ...}}}, ...]}
+            val sessionsJson = result.getAsJsonArray("items")
+                ?: result.getAsJsonArray("sessions")
                 ?: return Result.success(emptyList())
 
             val sessions = sessionsJson.mapNotNull { element ->

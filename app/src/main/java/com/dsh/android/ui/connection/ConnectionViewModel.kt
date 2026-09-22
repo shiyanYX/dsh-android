@@ -12,6 +12,9 @@ import javax.inject.Inject
 
 data class ConnectionUiState(
     val serverAddress: String = "",
+    val protocol: String = "HTTPS",
+    val port: String = "16666",
+    val path: String = "",
     val username: String = "",
     val password: String = "",
     val rememberPassword: Boolean = false,
@@ -32,6 +35,20 @@ class ConnectionViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(serverAddress = address)
     }
 
+    fun onProtocolChange(protocol: String) {
+        _uiState.value = _uiState.value.copy(protocol = protocol)
+    }
+
+    fun onPortChange(port: String) {
+        // Only allow digits
+        val filtered = port.filter { it.isDigit() }
+        _uiState.value = _uiState.value.copy(port = filtered)
+    }
+
+    fun onPathChange(path: String) {
+        _uiState.value = _uiState.value.copy(path = path)
+    }
+
     fun onUsernameChange(username: String) {
         _uiState.value = _uiState.value.copy(username = username)
     }
@@ -46,45 +63,39 @@ class ConnectionViewModel @Inject constructor(
 
     fun connect() {
         val state = _uiState.value
-        if (state.serverAddress.isBlank() || state.username.isBlank() || state.password.isBlank()) {
-            _uiState.value = state.copy(error = "请填写所有字段")
+        if (state.username.isBlank() || state.password.isBlank()) {
+            _uiState.value = state.copy(error = "请填写用户名和密码")
             return
         }
 
-        // Validate URL scheme: enforce HTTPS for non-localhost addresses
-        val address = state.serverAddress.trim()
-        val uri = try {
-            android.net.Uri.parse(address)
-        } catch (e: Exception) {
-            _uiState.value = state.copy(error = "无效的服务器地址")
+        // Build server address from components
+        val host = state.serverAddress.trim().removePrefix("http://").removePrefix("https://")
+            .trimEnd('/')
+        if (host.isBlank()) {
+            _uiState.value = state.copy(error = "请填写服务器地址")
             return
         }
 
-        val scheme = uri.scheme?.lowercase()
-        val host = uri.host?.lowercase() ?: ""
+        val scheme = state.protocol.lowercase()
+        val port = state.port.ifBlank { if (scheme == "https") "443" else "80" }
+        val basePath = state.path.trim().trimEnd('/')
 
-        if (scheme != "http" && scheme != "https") {
-            _uiState.value = state.copy(error = "服务器地址必须以 http:// 或 https:// 开头")
-            return
-        }
-
-        val isLocalhost = host == "localhost" || host == "127.0.0.1" || host == "::1"
-        if (scheme == "http" && !isLocalhost) {
-            _uiState.value = state.copy(
-                error = "非本地服务器建议使用 HTTPS，HTTP 连接不安全"
-            )
-            return
+        val serverAddress = buildString {
+            append("$scheme://$host:$port")
+            if (basePath.isNotBlank()) {
+                append("/$basePath")
+            }
         }
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            val result = repository.login(state.serverAddress, state.username, state.password)
+            _uiState.value = state.copy(isLoading = true, error = null)
+            val result = repository.login(serverAddress, state.username, state.password)
             result.fold(
                 onSuccess = {
-                    _uiState.value = _uiState.value.copy(isLoading = false, isConnected = true)
+                    _uiState.value = state.copy(isLoading = false, isConnected = true)
                 },
                 onFailure = { e ->
-                    _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
+                    _uiState.value = state.copy(isLoading = false, error = e.message)
                 }
             )
         }

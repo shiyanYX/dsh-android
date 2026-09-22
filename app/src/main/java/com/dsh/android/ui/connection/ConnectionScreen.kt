@@ -1,11 +1,16 @@
 package com.dsh.android.ui.connection
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -27,36 +32,92 @@ fun ConnectionScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("DSH Client") })
+            TopAppBar(title = { Text("服务器") })
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "连接到 DSH 服务器",
-                style = MaterialTheme.typography.headlineMedium
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
+            // Server address
             OutlinedTextField(
                 value = uiState.serverAddress,
                 onValueChange = viewModel::onServerAddressChange,
                 label = { Text("服务器地址") },
-                placeholder = { Text("https://dsh.example.com:3080") },
+                placeholder = { Text("dsh.example.com") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Protocol + Port row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Protocol dropdown
+                var protocolExpanded by remember { mutableStateOf(false) }
+                val protocols = listOf("HTTPS", "HTTP")
+                val protocolIcons = listOf("🔒", "⚠️")
 
+                ExposedDropdownMenuBox(
+                    expanded = protocolExpanded,
+                    onExpandedChange = { protocolExpanded = it },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    OutlinedTextField(
+                        value = uiState.protocol,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("协议") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = protocolExpanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = protocolExpanded,
+                        onDismissRequest = { protocolExpanded = false }
+                    ) {
+                        protocols.forEach { protocol ->
+                            DropdownMenuItem(
+                                text = { Text(protocol) },
+                                onClick = {
+                                    viewModel.onProtocolChange(protocol)
+                                    protocolExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Port field
+                OutlinedTextField(
+                    value = uiState.port,
+                    onValueChange = viewModel::onPortChange,
+                    label = { Text("端口") },
+                    placeholder = { Text("443") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+
+            // Path (optional)
+            OutlinedTextField(
+                value = uiState.path,
+                onValueChange = viewModel::onPathChange,
+                label = { Text("路径(可选,无则留空)") },
+                placeholder = { Text("") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            // Username
             OutlinedTextField(
                 value = uiState.username,
                 onValueChange = viewModel::onUsernameChange,
@@ -65,8 +126,7 @@ fun ConnectionScreen(
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
+            // Password
             OutlinedTextField(
                 value = uiState.password,
                 onValueChange = viewModel::onPasswordChange,
@@ -77,8 +137,7 @@ fun ConnectionScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
+            // Remember password
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -90,8 +149,18 @@ fun ConnectionScreen(
                 Text("记住密码")
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
+            // Error message
+            uiState.error?.let { error ->
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            // Connect button
             Button(
                 onClick = viewModel::connect,
                 modifier = Modifier.fillMaxWidth(),
@@ -102,19 +171,20 @@ fun ConnectionScreen(
                         modifier = Modifier.size(20.dp),
                         color = MaterialTheme.colorScheme.onPrimary
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("连接中...")
                 } else {
                     Text("连接")
                 }
             }
 
-            uiState.error?.let { error ->
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
+            // Quick connect info
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "支持的格式：\n• 域名:端口 (如 dsh.example.com:16666)\n• IP:端口 (如 192.168.1.100:3080)\n• 完整 URL (如 https://dsh.example.com:16666)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
