@@ -7,11 +7,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dsh.android.domain.model.Message
 import com.dsh.android.domain.model.MessageRole
-import com.mikepenz.markdown.coil3.M3MarkdownText
-import com.mikepenz.markdown.coil3.Coil3ImageLoader
 
 @Composable
 fun MessageBubble(
@@ -38,20 +39,26 @@ fun MessageBubble(
             },
             modifier = Modifier.widthIn(max = 300.dp)
         ) {
-            if (isUser) {
-                Text(
-                    text = message.content,
-                    modifier = Modifier.padding(12.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    style = MaterialTheme.typography.bodyMedium
+            // Basic code-aware text rendering for assistant messages
+            val textStyle = if (!isUser && message.content.contains("```")) {
+                TextStyle(
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 13.sp
                 )
             } else {
-                M3MarkdownText(
-                    markdown = message.content,
-                    modifier = Modifier.padding(12.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                MaterialTheme.typography.bodyMedium
             }
+
+            Text(
+                text = message.content,
+                modifier = Modifier.padding(12.dp),
+                color = if (isUser) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                style = textStyle
+            )
         }
     }
 }
