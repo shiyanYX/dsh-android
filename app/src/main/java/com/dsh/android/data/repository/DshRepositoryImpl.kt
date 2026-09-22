@@ -63,6 +63,7 @@ class DshRepositoryImpl @Inject constructor(
                     val sessionId = obj.get("sessionId")?.asString ?: return@mapNotNull null
                     val updatedAt = obj.get("updatedAt")?.asLong ?: 0L
                     val running = obj.get("running")?.asBoolean ?: false
+                    val cwd = obj.get("cwd")?.asString ?: ""
                     val projections = obj.getAsJsonObject("projections")
                     val values = projections?.getAsJsonObject("values")
                     val title = values?.get("title")?.asString ?: sessionId
@@ -72,12 +73,28 @@ class DshRepositoryImpl @Inject constructor(
                     val lastUsed = modelSelection?.getAsJsonObject("lastUsed")
                     val model = lastUsed?.get("model")?.asString
 
+                    // Extract subagent info
+                    val subagent = values?.getAsJsonObject("subagent")
+                    val isSubagent = subagent != null && !subagent.isJsonNull
+                    val subagentLabel = subagent?.get("label")?.asString
+                    val subagentMode = subagent?.get("mode")?.asString
+
+                    // Extract turn count
+                    val sessionStats = values?.getAsJsonObject("sessionStats")
+                    val turnCount = sessionStats?.get("turns")?.asInt ?: 0
+
                     Session(
                         id = sessionId,
                         title = title,
-                        createdAt = updatedAt, // DSH only provides updatedAt
+                        createdAt = updatedAt,
                         updatedAt = updatedAt,
-                        model = model
+                        model = model,
+                        cwd = cwd,
+                        running = running,
+                        isSubagent = isSubagent,
+                        subagentLabel = subagentLabel,
+                        subagentMode = subagentMode,
+                        turnCount = turnCount
                     )
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to parse session: ${e.message}")

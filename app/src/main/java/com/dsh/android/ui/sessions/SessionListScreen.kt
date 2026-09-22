@@ -10,23 +10,24 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.SubdirectoryArrowRight
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dsh.android.domain.model.Session
-import com.dsh.android.data.local.DshPreferences
-import com.dsh.android.domain.model.Favorite
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SessionListScreen(
     onSessionClick: (String) -> Unit,
@@ -42,6 +43,13 @@ fun SessionListScreen(
             TopAppBar(
                 title = { Text("工作区") },
                 actions = {
+                    // Toggle subagent visibility
+                    TextButton(onClick = viewModel::toggleSubagents) {
+                        Text(
+                            if (uiState.showSubagents) "隐藏子代理" else "显示子代理",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
                     IconButton(onClick = onFavoritesClick) {
                         Icon(Icons.Default.Favorite, contentDescription = "收藏")
                     }
@@ -83,7 +91,7 @@ fun SessionListScreen(
                         CircularProgressIndicator()
                     }
                 }
-                uiState.sessions.isEmpty() -> {
+                uiState.workspaceGroups.isEmpty() -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -94,21 +102,79 @@ fun SessionListScreen(
                 else -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        items(uiState.sessions) { session ->
-                            SessionItem(
-                                session = session,
-                                onClick = { onSessionClick(session.id) },
-                                onLongClick = {
-                                    // Show session actions
-                                }
-                            )
+                        uiState.workspaceGroups.forEach { group ->
+                            // Workspace section header
+                            stickyHeader {
+                                WorkspaceHeader(
+                                    name = group.displayName,
+                                    sessionCount = group.sessions.size,
+                                    cwd = group.cwd
+                                )
+                            }
+
+                            // Sessions in this workspace
+                            items(group.sessions) { session ->
+                                SessionItem(
+                                    session = session,
+                                    onClick = { onSessionClick(session.id) },
+                                    onLongClick = {
+                                        Toast.makeText(
+                                            context,
+                                            "${session.title}\n${session.model ?: "未知模型"}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
+
+                            // Spacer between groups
+                            item { Spacer(modifier = Modifier.height(8.dp)) }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun WorkspaceHeader(
+    name: String,
+    sessionCount: Int,
+    cwd: String
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Folder,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = name,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "($sessionCount)",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -123,30 +189,113 @@ fun SessionItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (session.isSubagent) Modifier.padding(start = 16.dp) else Modifier
+            )
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
-            )
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (session.isSubagent) {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = session.title,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = session.model ?: "Unknown model",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = formatDate(session.updatedAt),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // Sub-agent indicator
+            if (session.isSubagent) {
+                Icon(
+                    Icons.Default.SubdirectoryArrowRight,
+                    contentDescription = "子代理",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.secondary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                // Title row
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (session.running) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(8.dp)
+                        ) {}
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Text(
+                        text = if (session.isSubagent && session.subagentLabel != null) {
+                            session.subagentLabel
+                        } else {
+                            session.title
+                        },
+                        style = if (session.isSubagent) {
+                            MaterialTheme.typography.bodyMedium
+                        } else {
+                            MaterialTheme.typography.titleSmall
+                        },
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        fontWeight = if (session.running) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+
+                // Subtitle: model + turns
+                Spacer(modifier = Modifier.height(2.dp))
+                Row {
+                    if (session.model != null) {
+                        Text(
+                            text = session.model,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                    }
+                    if (session.turnCount > 0) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${session.turnCount}轮",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Sub-agent mode badge
+                if (session.isSubagent && session.subagentMode != null) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Surface(
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = MaterialTheme.colorScheme.secondaryContainer
+                    ) {
+                        Text(
+                            text = session.subagentMode,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                        )
+                    }
+                }
+
+                // Time
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = formatDate(session.updatedAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

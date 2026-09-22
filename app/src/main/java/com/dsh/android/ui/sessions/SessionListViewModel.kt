@@ -11,11 +11,26 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** A group of sessions under the same workspace folder */
+data class WorkspaceGroup(
+    val workspaceName: String,
+    val cwd: String,
+    val sessions: List<Session>
+) {
+    val displayName: String
+        get() = buildString {
+            append(workspaceName)
+            if (sessions.any { it.running }) append(" 🟢")
+        }
+}
+
 data class SessionListUiState(
     val sessions: List<Session> = emptyList(),
+    val workspaceGroups: List<WorkspaceGroup> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val showSubagents: Boolean = false // false = hide subagent sessions
 )
 
 @HiltViewModel
@@ -36,7 +51,17 @@ class SessionListViewModel @Inject constructor(
             val result = repository.getSessions()
             result.fold(
                 onSuccess = { sessions ->
-                    _uiState.value = _uiState.value.copy(sessions = sessions, isLoading = false)
+                    val filtered = if (_uiState.value.showSubagents) {
+                        sessions
+                    } else {
+                        sessions.filter { !it.isSubagent }
+                    }
+                    val groups = groupByWorkspace(filtered)
+                    _uiState.value = _uiState.value.copy(
+                        sessions = sessions,
+                        workspaceGroups = groups,
+                        isLoading = false
+                    )
                 },
                 onFailure = { e ->
                     _uiState.value = _uiState.value.copy(error = e.message, isLoading = false)
@@ -47,23 +72,52 @@ class SessionListViewModel @Inject constructor(
 
     fun onSearchQueryChange(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query)
-        if (query.isBlank()) {
-            loadSessions()
-        } else {
-            searchSessions(query)
-        }
+        applyFilters()
     }
 
-    private fun searchSessions(query: String) {
-        viewModelScope.launch {
-            val result = repository.searchSessions(query)
-            result.fold(
-                onSuccess = { sessions ->
-                    _uiState.value = _uiState.value.copy(sessions = sessions)
-                },
-                onFailure = { /* Ignore search errors */ }
-            )
+    fun toggleSubagents() {
+        _uiState.value = _uiState.value.copy(
+            showSubagents = !_uiState.value.showSubagents
+        )
+        applyFilters()
+    }
+
+    private fun applyFilters() {
+        val query = _uiState.value.searchQuery.trim().lowercase()
+        var filtered = _uiState.value.sessions
+
+        // Filter subagents
+        if (!_uiState.value.showSubagents) {
+            filtered = filtered.filter { !it.isSubagent }
         }
+
+        // Search filter
+        if (query.isNotBlank()) {
+            filtered = filtered.filter {
+                it.title.lowercase().contains(query) ||
+                it.workspaceName.lowercase().contains(query) ||
+                it.model?.lowercase()?.contains(query) == true
+            }
+        }
+
+        val groups = groupByWorkspace(filtered)
+        _uiState.value = _uiState.value.copy(workspaceGroups = groups)
+    }
+
+    private fun groupByWorkspace(sessions: List<Session>): List<WorkspaceGroup> {
+        return sessions
+            .groupBy { it.cwd.ifBlank { "unknown" } }
+            .toSortedMap(compareByDescending { dir ->
+                // Sort by most recently updated session in group
+                sessions.filter { it.cwd == dir }.maxOfOrNull { it.updatedAt } ?: 0L
+            })
+            .map { (cwd, groupSessions) ->
+                WorkspaceGroup(
+                    workspaceName = groupSessions.first().workspaceName,
+                    cwd = cwd,
+                    sessions = groupSessions.sortedByDescending { it.updatedAt }
+                )
+            }
     }
 
     fun createSession() {
