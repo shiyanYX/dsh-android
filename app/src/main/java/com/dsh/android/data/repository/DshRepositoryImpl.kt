@@ -6,6 +6,7 @@ import com.dsh.android.data.remote.DshRpcClient
 import com.dsh.android.data.remote.DshWebSocketClient
 import com.dsh.android.domain.model.*
 import com.dsh.android.domain.repository.DshRepository
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kotlinx.coroutines.flow.Flow
@@ -25,6 +26,7 @@ class DshRepositoryImpl @Inject constructor(
 ) : DshRepository {
 
     private val _webSocketEvents = MutableSharedFlow<WebSocketEvent>(replay = 0)
+    private val gson = Gson()
 
     override val isConnected: Flow<Boolean> = preferences.sessionToken.map { it != null }
     override val webSocketEvents: Flow<WebSocketEvent> = _webSocketEvents
@@ -81,8 +83,8 @@ class DshRepositoryImpl @Inject constructor(
                     val updatedAt = obj.get("updatedAt")?.asLong ?: 0L
                     val running = obj.get("running")?.asBoolean ?: false
                     val cwd = obj.get("cwd")?.asString ?: ""
-                    val projections = obj.getAsJsonObject("projections")
-                    val values = projections?.getAsJsonObject("values")
+                    val projections = obj.get("projections")?.takeIf { it.isJsonObject }?.asJsonObject
+                    val values = projections?.get("values")?.takeIf { it.isJsonObject }?.asJsonObject
 
                     // Handle title: may be missing, null (JsonNull), or a real string
                     val titleElement = values?.get("title")
@@ -93,20 +95,20 @@ class DshRepositoryImpl @Inject constructor(
                     }
 
                     // Extract model from modelSelection
-                    val modelSelection = values?.getAsJsonObject("modelSelection")
-                    val lastUsed = modelSelection?.getAsJsonObject("lastUsed")
+                    val modelSelection = values?.get("modelSelection")?.takeIf { it.isJsonObject }?.asJsonObject
+                    val lastUsed = modelSelection?.get("lastUsed")?.takeIf { it.isJsonObject }?.asJsonObject
                     val model = lastUsed?.get("model")?.asString
 
                     // Extract subagent info (handle JsonNull safely)
                     val subagentElement = values?.get("subagent")
-                    val subagent = if (subagentElement != null && !subagentElement.isJsonNull)
+                    val subagent = if (subagentElement != null && !subagentElement.isJsonNull && subagentElement.isJsonObject)
                         subagentElement.asJsonObject else null
                     val isSubagent = subagent != null
                     val subagentLabel = subagent?.get("label")?.asString
                     val subagentMode = subagent?.get("mode")?.asString
 
                     // Extract turn count
-                    val sessionStats = values?.getAsJsonObject("sessionStats")
+                    val sessionStats = values?.get("sessionStats")?.takeIf { it.isJsonObject }?.asJsonObject
                     val turnCount = sessionStats?.get("turns")?.asInt ?: 0
 
                     Session(
@@ -425,9 +427,22 @@ class DshRepositoryImpl @Inject constructor(
 
     override suspend fun sendMessage(sessionId: String, content: String): Result<Unit> {
         return try {
-            wsClient.sendMessage(sessionId, content)
+            // session/prompt via HTTP RPC (not WebSocket)
+            val args = JsonObject().apply {
+                add("request", JsonObject().apply {
+                    addProperty("requestId", java.util.UUID.randomUUID().toString())
+                    addProperty("sessionId", sessionId)
+                    addProperty("mode", "queue")
+                    add("content", gson.toJsonTree(listOf(
+                        mapOf("type" to "text", "text" to content)
+                    )))
+                })
+            }
+            rpcClient.call("session", "prompt", args, wireKey = "request")
+            logger.i(TAG, "sendMessage: OK via HTTP RPC for session=$sessionId content=${content.take(50)}")
             Result.success(Unit)
         } catch (e: Exception) {
+            logger.e(TAG, "sendMessage failed for session=$sessionId", e)
             Result.failure(Exception("发送消息失败：${e.message}"))
         }
     }
