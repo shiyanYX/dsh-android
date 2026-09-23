@@ -1,5 +1,6 @@
 package com.dsh.android.ui.chat
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dsh.android.domain.model.*
@@ -48,7 +49,28 @@ class ChatViewModel @Inject constructor(
 
     fun setSession(sessionId: String) {
         currentSessionId = sessionId
+        // Load history first, then connect WebSocket for real-time updates
+        loadHistory(sessionId)
         repository.connectWebSocket(sessionId)
+    }
+
+    private fun loadHistory(sessionId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            val result = repository.getSessionHistory(sessionId, maxMessages = 200)
+            result.fold(
+                onSuccess = { messages ->
+                    _uiState.value = _uiState.value.copy(
+                        messages = messages,
+                        isLoading = false
+                    )
+                },
+                onFailure = { e ->
+                    Log.w("ChatVM", "Failed to load history: ${e.message}")
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                }
+            )
+        }
     }
 
     private fun loadModels() {

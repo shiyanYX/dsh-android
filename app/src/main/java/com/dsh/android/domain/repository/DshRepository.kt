@@ -14,6 +14,7 @@ interface DshRepository {
     suspend fun deleteSession(sessionId: String): Result<Unit>
     suspend fun searchSessions(query: String): Result<List<Session>>
     suspend fun getModels(): Result<List<DshModel>>
+    suspend fun getSessionHistory(sessionId: String, maxMessages: Int = 100): Result<List<Message>>
     suspend fun sendMessage(sessionId: String, content: String): Result<Unit>
     suspend fun confirmToolCall(sessionId: String, callId: String, approved: Boolean): Result<Unit>
     fun connectWebSocket(sessionId: String)

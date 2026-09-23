@@ -205,6 +205,133 @@ class DshRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getSessionHistory(sessionId: String, maxMessages: Int): Result<List<Message>> {
+        return try {
+            // First get a high throughSeq from the session list
+            val listResult = rpcClient.call("session", "list", JsonObject())
+            val items = listResult.getAsJsonArray("items") ?: return Result.success(emptyList())
+            var throughSeq = 0
+            for (item in items) {
+                val obj = item.asJsonObject
+                if (obj.get("sessionId")?.asString == sessionId) {
+                    throughSeq = obj.getAsJsonObject("projections")
+                        ?.get("asOfSeq")?.asInt ?: 0
+                    break
+                }
+            }
+            if (throughSeq == 0) return Result.success(emptyList())
+
+            // Load page of events via HTTP (session/page is non-streaming)
+            val args = JsonObject().apply {
+                add("address", JsonObject().apply {
+                    addProperty("kind", "session")
+                    addProperty("sessionId", sessionId)
+                })
+                addProperty("throughSeq", throughSeq)
+                addProperty("maxMessages", maxMessages)
+            }
+            val result = rpcClient.call("session", "page", args, wireKey = "request")
+            val records = result.getAsJsonArray("records") ?: return Result.success(emptyList())
+
+            val messages = mutableListOf<Message>()
+            var currentAssistantContent = StringBuilder()
+            var currentAssistantId = ""
+            var currentToolCalls = mutableListOf<ToolCall>()
+
+            for (record in records) {
+                val recObj = record.asJsonObject
+                val event = recObj.getAsJsonObject("event") ?: continue
+                val eventType = event.get("type")?.asString ?: continue
+                val data = event.getAsJsonObject("data")
+                val seq = event.get("seq")?.asLong ?: 0
+                val time = event.get("time")?.asLong ?: System.currentTimeMillis()
+
+                when (eventType) {
+                    "assistant/message" -> {
+                        // Flush previous assistant message if any
+                        if (currentAssistantContent.isNotEmpty()) {
+                            messages.add(Message(
+                                id = currentAssistantId,
+                                sessionId = sessionId,
+                                role = MessageRole.ASSISTANT,
+                                content = currentAssistantContent.toString().trim(),
+                                timestamp = time,
+                                toolCalls = currentToolCalls.toList()
+                            ))
+                            currentAssistantContent = StringBuilder()
+                            currentToolCalls = mutableListOf()
+                        }
+                        currentAssistantId = "msg-$seq"
+                        // Extract message content from data.message
+                        val msgObj = data?.getAsJsonObject("message")
+                        val content = msgObj?.get("content")?.asString
+                            ?: data?.get("content")?.asString
+                            ?: ""
+                        if (content.isNotBlank()) {
+                            currentAssistantContent.append(content)
+                        }
+                    }
+                    "user/message" -> {
+                        // Flush previous assistant message
+                        if (currentAssistantContent.isNotEmpty()) {
+                            messages.add(Message(
+                                id = currentAssistantId,
+                                sessionId = sessionId,
+                                role = MessageRole.ASSISTANT,
+                                content = currentAssistantContent.toString().trim(),
+                                timestamp = time,
+                                toolCalls = currentToolCalls.toList()
+                            ))
+                            currentAssistantContent = StringBuilder()
+                            currentToolCalls = mutableListOf()
+                        }
+                        val content = data?.getAsJsonObject("message")?.get("content")?.asString
+                            ?: data?.get("content")?.asString
+                            ?: ""
+                        if (content.isNotBlank()) {
+                            messages.add(Message(
+                                id = "msg-$seq",
+                                sessionId = sessionId,
+                                role = MessageRole.USER,
+                                content = content,
+                                timestamp = time
+                            ))
+                        }
+                    }
+                    "tool/call" -> {
+                        val toolCall = ToolCall(
+                            id = data?.get("callId")?.asString ?: "tc-$seq",
+                            toolName = data?.get("name")?.asString ?: "unknown",
+                            args = emptyMap()
+                        )
+                        currentToolCalls.add(toolCall)
+                    }
+                    "step/end" -> {
+                        // Step end signals end of a tool sequence, keep going
+                    }
+                }
+            }
+
+            // Flush any remaining assistant message
+            if (currentAssistantContent.isNotEmpty()) {
+                messages.add(Message(
+                    id = currentAssistantId,
+                    sessionId = sessionId,
+                    role = MessageRole.ASSISTANT,
+                    content = currentAssistantContent.toString().trim(),
+                    timestamp = System.currentTimeMillis(),
+                    toolCalls = currentToolCalls.toList()
+                ))
+            }
+
+            Log.d(TAG, "Loaded ${messages.size} messages from session $sessionId")
+            Result.success(messages)
+        } catch (e: Exception) {
+            Log.e(TAG, "getSessionHistory failed", e)
+            Result.failure(Exception("加载聊天历史失败：${e.message}"))
+        }
+    }
+
     override suspend fun sendMessage(sessionId: String, content: String): Result<Unit> {
         return try {
             wsClient.sendMessage(sessionId, content)
