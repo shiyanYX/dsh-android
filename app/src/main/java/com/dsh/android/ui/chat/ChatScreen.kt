@@ -117,6 +117,13 @@ fun ChatScreen(
                                 .padding(end = 8.dp)
                         )
                     }
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .padding(end = 8.dp)
+                        )
+                    }
                 }
             )
         },
@@ -134,30 +141,101 @@ fun ChatScreen(
             )
         }
     ) { padding ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(vertical = 8.dp)
-        ) {
-            // Tool calls
-            items(uiState.toolCalls) { toolCall ->
-                ToolCallCard(
-                    toolCall = toolCall,
-                    onApprove = { viewModel.confirmToolCall(toolCall.id, true) },
-                    onReject = { viewModel.confirmToolCall(toolCall.id, false) }
-                )
+        when {
+            uiState.isLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("加载历史消息中...", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
             }
+            uiState.error != null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "⚠️",
+                            style = MaterialTheme.typography.headlineLarge
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = uiState.error!!,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedButton(onClick = { viewModel.setSession(sessionId) }) {
+                            Text("重试")
+                        }
+                    }
+                }
+            }
+            uiState.messages.isEmpty() && uiState.toolCalls.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "💬",
+                            style = MaterialTheme.typography.headlineLarge
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "暂无消息",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "发送消息开始对话",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            else -> {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    // Tool calls
+                    items(uiState.toolCalls) { toolCall ->
+                        ToolCallCard(
+                            toolCall = toolCall,
+                            onApprove = { viewModel.confirmToolCall(toolCall.id, true) },
+                            onReject = { viewModel.confirmToolCall(toolCall.id, false) }
+                        )
+                    }
 
-            // Messages with long-press support
-            items(uiState.messages) { message ->
-                MessageBubble(
-                    message = message,
-                    onLongClick = { viewModel.showMessageActions(message.id) }
-                )
+                    // Messages with long-press support
+                    items(uiState.messages) { message ->
+                        MessageBubble(
+                            message = message,
+                            onLongClick = { viewModel.showMessageActions(message.id) }
+                        )
+                    }
+                }
             }
         }
     }

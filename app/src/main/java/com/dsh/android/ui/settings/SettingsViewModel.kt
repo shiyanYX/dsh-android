@@ -1,9 +1,10 @@
 package com.dsh.android.ui.settings
 
-import android.content.Context
-import android.content.Intent
+import android.content.ContentValues
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.widget.Toast
-import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dsh.android.data.local.DshPreferences
@@ -11,11 +12,15 @@ import com.dsh.android.domain.repository.DshRepository
 import com.dsh.android.util.DshLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 enum class ThemeMode { LIGHT, DARK, SYSTEM }
@@ -98,25 +103,31 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Export ring buffer to public Downloads directory (accessible via file manager)
+     */
     fun exportLogBuffer() {
         viewModelScope.launch {
             try {
-                val file = logger.exportRingBuffer()
-                if (file != null) {
+                val internalFile = logger.exportRingBuffer()
+                if (internalFile == null) {
+                    _uiState.value = _uiState.value.copy(lastLogMessage = "导出失败: 无法生成日志文件")
+                    return@launch
+                }
+
+                val savedPath = copyToDownloads(internalFile, "dsh_log_${System.currentTimeMillis()}.txt")
+                if (savedPath != null) {
                     _uiState.value = _uiState.value.copy(
-                        lastLogMessage = "已导出: ${file.absolutePath}"
+                        lastLogMessage = "✅ 日志已保存到: Downloads/dsh_logs/$savedPath"
                     )
-                    // Try to share the file
-                    shareLogFile(file)
                 } else {
+                    // Fallback: show internal path
                     _uiState.value = _uiState.value.copy(
-                        lastLogMessage = "导出失败"
+                        lastLogMessage = "保存到 Downloads 失败，内部路径: ${internalFile.absolutePath}"
                     )
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    lastLogMessage = "导出失败: ${e.message}"
-                )
+                _uiState.value = _uiState.value.copy(lastLogMessage = "导出失败: ${e.message}")
             }
         }
     }
@@ -126,53 +137,69 @@ class SettingsViewModel @Inject constructor(
             val file = logger.startFileLogging()
             if (file != null) {
                 _uiState.value = _uiState.value.copy(
-                    lastLogMessage = "日志记录已开始: ${file.name}"
+                    lastLogMessage = "🔴 正在记录: ${file.name}"
                 )
             } else {
-                _uiState.value = _uiState.value.copy(
-                    lastLogMessage = "开始记录失败"
-                )
+                _uiState.value = _uiState.value.copy(lastLogMessage = "开始记录失败")
             }
         } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                lastLogMessage = "开始记录失败: ${e.message}"
-            )
+            _uiState.value = _uiState.value.copy(lastLogMessage = "开始记录失败: ${e.message}")
         }
     }
 
     fun stopFileLogging() {
-        try {
-            val file = logger.stopFileLogging()
-            if (file != null) {
-                _uiState.value = _uiState.value.copy(
-                    lastLogMessage = "日志记录已停止: ${file.name} (${file.length() / 1024}KB)"
-                )
-                shareLogFile(file)
+        viewModelScope.launch {
+            try {
+                val file = logger.stopFileLogging()
+                if (file != null) {
+                    val sizeKB = file.length() / 1024
+                    val savedPath = copyToDownloads(file, file.name)
+                    _uiState.value = _uiState.value.copy(
+                        lastLogMessage = "✅ 停止记录 (${sizeKB}KB) → Downloads/dsh_logs/$savedPath"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(lastLogMessage = "停止记录失败: ${e.message}")
             }
-        } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(
-                lastLogMessage = "停止记录失败: ${e.message}"
-            )
         }
     }
 
-    private fun shareLogFile(file: java.io.File) {
-        try {
-            val uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                file
-            )
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    /**
+     * Copy file to public Downloads/dsh_logs/ directory using MediaStore (API 29+)
+     * or direct file copy (older APIs).
+     */
+    private suspend fun copyToDownloads(sourceFile: File, fileName: String): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    // Use MediaStore for Android 10+
+                    val resolver = context.contentResolver
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                        put(MediaStore.Downloads.MIME_TYPE, "text/plain")
+                        put(MediaStore.Downloads.RELATIVE_PATH, "Download/dsh_logs")
+                    }
+                    val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                    if (uri != null) {
+                        resolver.openOutputStream(uri)?.use { output ->
+                            sourceFile.inputStream().use { input ->
+                                input.copyTo(output)
+                            }
+                        }
+                        fileName
+                    } else null
+                } else {
+                    // Direct file copy for older APIs
+                    val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "dsh_logs")
+                    dir.mkdirs()
+                    val dest = File(dir, fileName)
+                    sourceFile.copyTo(dest, overwrite = true)
+                    fileName
+                }
+            } catch (e: Exception) {
+                logger.e("SettingsVM", "Copy to Downloads failed", e)
+                null
             }
-            context.startActivity(Intent.createChooser(intent, "分享日志文件"))
-        } catch (e: Exception) {
-            logger.w("SettingsVM", "Share failed: ${e.message}")
-            Toast.makeText(context, "分享失败: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 

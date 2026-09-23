@@ -116,7 +116,7 @@ class ChatViewModel @Inject constructor(
                 when (event) {
                     is WebSocketEvent.Connected -> {
                         logger.i(TAG, "WS connected")
-                        _uiState.value = _uiState.value.copy(isLoading = false)
+                        // Don't reset isLoading here — loadHistory controls it
                     }
                     is WebSocketEvent.Disconnected -> {
                         logger.w(TAG, "WS disconnected: ${event.reason}")
