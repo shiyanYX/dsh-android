@@ -53,6 +53,7 @@ object NetworkModule {
         return OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(60, TimeUnit.SECONDS)  // Hard limit on entire call
             .followRedirects(false) // We handle redirects manually for token exchange
             .build()
     }

@@ -1,9 +1,6 @@
 package com.dsh.android.ui.settings
 
-import android.content.ContentValues
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
+import android.content.Context
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,15 +9,11 @@ import com.dsh.android.domain.repository.DshRepository
 import com.dsh.android.util.DshLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import android.content.Context
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
 import javax.inject.Inject
 
 enum class ThemeMode { LIGHT, DARK, SYSTEM }
@@ -109,25 +102,20 @@ class SettingsViewModel @Inject constructor(
     fun exportLogBuffer() {
         viewModelScope.launch {
             try {
-                val internalFile = logger.exportRingBuffer()
-                if (internalFile == null) {
-                    _uiState.value = _uiState.value.copy(lastLogMessage = "导出失败: 无法生成日志文件")
-                    return@launch
-                }
-
-                val savedPath = copyToDownloads(internalFile, "dsh_log_${System.currentTimeMillis()}.txt")
-                if (savedPath != null) {
+                val file = logger.exportRingBuffer()
+                if (file != null) {
                     _uiState.value = _uiState.value.copy(
-                        lastLogMessage = "✅ 日志已保存到: Downloads/dsh_logs/$savedPath"
+                        lastLogMessage = "✅ 日志已保存: ${file.absolutePath}"
                     )
                 } else {
-                    // Fallback: show internal path
                     _uiState.value = _uiState.value.copy(
-                        lastLogMessage = "保存到 Downloads 失败，内部路径: ${internalFile.absolutePath}"
+                        lastLogMessage = "❌ 导出失败: 无法生成日志文件"
                     )
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(lastLogMessage = "导出失败: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    lastLogMessage = "❌ 导出失败: ${e.message}"
+                )
             }
         }
     }
@@ -153,52 +141,12 @@ class SettingsViewModel @Inject constructor(
                 val file = logger.stopFileLogging()
                 if (file != null) {
                     val sizeKB = file.length() / 1024
-                    val savedPath = copyToDownloads(file, file.name)
                     _uiState.value = _uiState.value.copy(
-                        lastLogMessage = "✅ 停止记录 (${sizeKB}KB) → Downloads/dsh_logs/$savedPath"
+                        lastLogMessage = "✅ 停止记录 (${sizeKB}KB): ${file.absolutePath}"
                     )
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(lastLogMessage = "停止记录失败: ${e.message}")
-            }
-        }
-    }
-
-    /**
-     * Copy file to public Downloads/dsh_logs/ directory using MediaStore (API 29+)
-     * or direct file copy (older APIs).
-     */
-    private suspend fun copyToDownloads(sourceFile: File, fileName: String): String? {
-        return withContext(Dispatchers.IO) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    // Use MediaStore for Android 10+
-                    val resolver = context.contentResolver
-                    val contentValues = ContentValues().apply {
-                        put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                        put(MediaStore.Downloads.MIME_TYPE, "text/plain")
-                        put(MediaStore.Downloads.RELATIVE_PATH, "Download/dsh_logs")
-                    }
-                    val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-                    if (uri != null) {
-                        resolver.openOutputStream(uri)?.use { output ->
-                            sourceFile.inputStream().use { input ->
-                                input.copyTo(output)
-                            }
-                        }
-                        fileName
-                    } else null
-                } else {
-                    // Direct file copy for older APIs
-                    val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "dsh_logs")
-                    dir.mkdirs()
-                    val dest = File(dir, fileName)
-                    sourceFile.copyTo(dest, overwrite = true)
-                    fileName
-                }
-            } catch (e: Exception) {
-                logger.e("SettingsVM", "Copy to Downloads failed", e)
-                null
             }
         }
     }

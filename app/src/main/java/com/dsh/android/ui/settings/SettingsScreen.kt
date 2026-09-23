@@ -1,5 +1,6 @@
 package com.dsh.android.ui.settings
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
@@ -9,7 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -21,6 +25,8 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
 
     LaunchedEffect(uiState.isConnected) {
         if (!uiState.isConnected) {
@@ -212,12 +218,27 @@ fun SettingsScreen(
                         Text(
                             text = uiState.lastLogMessage!!,
                             style = MaterialTheme.typography.bodySmall,
-                            color = if (uiState.lastLogMessage!!.contains("失败") || uiState.lastLogMessage!!.contains("错误")) {
+                            color = if (uiState.lastLogMessage!!.contains("失败") || uiState.lastLogMessage!!.contains("❌")) {
                                 MaterialTheme.colorScheme.error
                             } else {
                                 MaterialTheme.colorScheme.primary
                             }
                         )
+                        if (uiState.lastLogMessage!!.contains("/")) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            TextButton(
+                                onClick = {
+                                    // Extract path after the emoji
+                                    val path = uiState.lastLogMessage!!
+                                        .replace(Regex("[✅🔴❌]\\s*"), "")
+                                        .trim()
+                                    clipboardManager.setText(AnnotatedString(path))
+                                    Toast.makeText(context, "路径已复制", Toast.LENGTH_SHORT).show()
+                                }
+                            ) {
+                                Text("📋 复制路径", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
                     }
                 }
             }

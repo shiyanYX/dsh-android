@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.dsh.android.domain.model.*
 import com.dsh.android.domain.repository.DshRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class TokenStats(
@@ -65,7 +65,21 @@ class ChatViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             logger.i(TAG, "loadHistory: starting for $sessionId")
             try {
-                val result = repository.getSessionHistory(sessionId, maxMessages = 200)
+                // Hard timeout: 60 seconds max for entire history load
+                val result = withTimeoutOrNull(60_000L) {
+                    repository.getSessionHistory(sessionId, maxMessages = 200)
+                }
+
+                if (result == null) {
+                    // Timeout
+                    logger.e(TAG, "loadHistory: TIMEOUT after 60s for session $sessionId")
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "加载超时（60秒），请检查网络连接后重试"
+                    )
+                    return@launch
+                }
+
                 result.fold(
                     onSuccess = { messages ->
                         logger.i(TAG, "loadHistory: OK - ${messages.size} messages loaded")
@@ -84,6 +98,12 @@ class ChatViewModel @Inject constructor(
                             error = "加载历史失败: ${e.message}"
                         )
                     }
+                )
+            } catch (e: CancellationException) {
+                logger.e(TAG, "loadHistory: CANCELLED - ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "加载被取消: ${e.message}"
                 )
             } catch (e: Exception) {
                 logger.e(TAG, "loadHistory: EXCEPTION - ${e.message}", e)
@@ -280,6 +300,10 @@ class ChatViewModel @Inject constructor(
 
     fun copyMessageContent(messageId: String): String? {
         return _uiState.value.messages.find { it.id == messageId }?.content
+    }
+
+    fun clearError() {
+        _uiState.value = _uiState.value.copy(error = null)
     }
 
     fun stopAgent() {

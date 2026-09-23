@@ -176,8 +176,13 @@ fun ChatScreen(
                             color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        OutlinedButton(onClick = { viewModel.setSession(sessionId) }) {
-                            Text("重试")
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = { viewModel.setSession(sessionId) }) {
+                                Text("重试")
+                            }
+                            OutlinedButton(onClick = { viewModel.clearError() }) {
+                                Text("忽略")
+                            }
                         }
                     }
                 }
