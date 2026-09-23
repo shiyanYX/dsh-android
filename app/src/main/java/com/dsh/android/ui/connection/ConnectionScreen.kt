@@ -35,6 +35,18 @@ fun ConnectionScreen(
             TopAppBar(title = { Text("服务器") })
         }
     ) { padding ->
+        if (uiState.isAutoLogging) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("自动登录中...", style = MaterialTheme.typography.bodyLarge)
+                }
+            }
+        } else {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -186,5 +198,6 @@ fun ConnectionScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        } // end else (non-auto-logging)
     }
 }
