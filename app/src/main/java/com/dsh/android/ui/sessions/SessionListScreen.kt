@@ -83,6 +83,26 @@ fun SessionListScreen(
                 onDismiss = viewModel::hideCreateDialog
             )
         }
+
+        // Delete session confirmation dialog
+        uiState.sessionToDelete?.let { session ->
+            AlertDialog(
+                onDismissRequest = viewModel::hideDeleteDialog,
+                title = { Text("删除会话") },
+                text = { Text("确定要删除「${session.title}」吗？\n此操作不可撤销。") },
+                confirmButton = {
+                    TextButton(
+                        onClick = viewModel::deleteSession,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) { Text("删除") }
+                },
+                dismissButton = {
+                    TextButton(onClick = viewModel::hideDeleteDialog) { Text("取消") }
+                }
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -139,11 +159,7 @@ fun SessionListScreen(
                                     session = session,
                                     onClick = { onSessionClick(session.id) },
                                     onLongClick = {
-                                        Toast.makeText(
-                                            context,
-                                            "${session.title}\n${session.model ?: "未知模型"}",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        viewModel.showDeleteDialog(session)
                                     }
                                 )
                             }

@@ -428,15 +428,14 @@ class DshRepositoryImpl @Inject constructor(
     override suspend fun sendMessage(sessionId: String, content: String): Result<Unit> {
         return try {
             // session/prompt via HTTP RPC (not WebSocket)
+            // wireKey="request" wraps args as {"request": args}, so don't add "request" again
             val args = JsonObject().apply {
-                add("request", JsonObject().apply {
-                    addProperty("requestId", java.util.UUID.randomUUID().toString())
-                    addProperty("sessionId", sessionId)
-                    addProperty("mode", "queue")
-                    add("content", gson.toJsonTree(listOf(
-                        mapOf("type" to "text", "text" to content)
-                    )))
-                })
+                addProperty("requestId", java.util.UUID.randomUUID().toString())
+                addProperty("sessionId", sessionId)
+                addProperty("mode", "queue")
+                add("content", gson.toJsonTree(listOf(
+                    mapOf("type" to "text", "text" to content)
+                )))
             }
             rpcClient.call("session", "prompt", args, wireKey = "request")
             logger.i(TAG, "sendMessage: OK via HTTP RPC for session=$sessionId content=${content.take(50)}")

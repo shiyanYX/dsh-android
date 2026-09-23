@@ -35,7 +35,8 @@ data class SessionListUiState(
     val showCreateDialog: Boolean = false,
     val availableWorkspaces: List<String> = emptyList(), // known workspace paths
     val selectedWorkspace: String = "", // selected workspace for new session
-    val navigateToSession: String? = null // session ID to navigate to after creation
+    val navigateToSession: String? = null, // session ID to navigate to after creation
+    val sessionToDelete: Session? = null // session to show delete confirmation for
 )
 
 @HiltViewModel
@@ -170,6 +171,33 @@ class SessionListViewModel @Inject constructor(
 
     fun clearNavigateToSession() {
         _uiState.value = _uiState.value.copy(navigateToSession = null)
+    }
+
+    fun showDeleteDialog(session: Session) {
+        _uiState.value = _uiState.value.copy(sessionToDelete = session)
+    }
+
+    fun hideDeleteDialog() {
+        _uiState.value = _uiState.value.copy(sessionToDelete = null)
+    }
+
+    fun deleteSession() {
+        val session = _uiState.value.sessionToDelete ?: return
+        viewModelScope.launch {
+            val result = repository.deleteSession(session.id)
+            result.fold(
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(sessionToDelete = null)
+                    loadSessions()
+                },
+                onFailure = { e ->
+                    _uiState.value = _uiState.value.copy(
+                        sessionToDelete = null,
+                        error = "删除失败：${e.message}"
+                    )
+                }
+            )
+        }
     }
 
     fun deleteSession(sessionId: String) {
