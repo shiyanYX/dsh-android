@@ -51,7 +51,9 @@ class DshWebSocketClient @Inject constructor(
     private var isManualDisconnect = false
     private var reconnectAttempt = 0
     private val maxReconnectAttempts = 5
-    private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    // Use a SupervisorJob that is NEVER cancelled — only the WebSocket is closed on disconnect.
+    // A cancelled CoroutineScope is permanently dead, which prevented all future connections.
+    private var coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     // Pending RPC calls (for streaming follow)
     private val pendingRpcs = mutableMapOf<String, (JsonObject) -> Unit>()
@@ -61,6 +63,10 @@ class DshWebSocketClient @Inject constructor(
     val events: SharedFlow<WebSocketEvent> = _events.asSharedFlow()
 
     fun connect(sessionId: String, onEvent: (WebSocketEvent) -> Unit) {
+        logger.i(TAG, "WS CONNECT called for session=$sessionId (previous=$currentSessionId)")
+        // Close any existing WebSocket first
+        webSocket?.close(1000, "New session")
+        webSocket = null
         currentSessionId = sessionId
         onEventCallback = onEvent
         isManualDisconnect = false
@@ -269,7 +275,8 @@ class DshWebSocketClient @Inject constructor(
     fun disconnect() {
         logger.i(TAG, "WS DISCONNECT: manual=$isManualDisconnect")
         isManualDisconnect = true
-        coroutineScope.cancel()
+        // Cancel pending reconnect jobs but don't kill the scope permanently
+        reconnectAttempt = maxReconnectAttempts // Prevent any reconnect
         webSocket?.close(1000, "Client disconnect")
         webSocket = null
         currentSessionId = null
