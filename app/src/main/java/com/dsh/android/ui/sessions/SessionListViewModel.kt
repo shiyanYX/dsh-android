@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dsh.android.domain.model.Session
 import com.dsh.android.domain.repository.DshRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,13 +45,15 @@ class SessionListViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(SessionListUiState())
     val uiState: StateFlow<SessionListUiState> = _uiState.asStateFlow()
+    private var loadSessionsJob: Job? = null
 
     init {
         loadSessions()
     }
 
     fun loadSessions() {
-        viewModelScope.launch {
+        loadSessionsJob?.cancel()
+        loadSessionsJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             val result = repository.getSessions()
             result.fold(

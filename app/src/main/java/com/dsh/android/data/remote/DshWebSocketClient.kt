@@ -35,9 +35,12 @@ class DshWebSocketClient @Inject constructor(
     @Named("plain") private val httpClient: OkHttpClient,
     private val logger: com.dsh.android.util.DshLogger
 ) {
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
+    // WebSocket needs its own client: readTimeout=0 (infinite), no callTimeout
+    // Must share SSL trust-all config with the plain client
+    private val client = httpClient.newBuilder()
         .readTimeout(0, TimeUnit.SECONDS)
+        .callTimeout(0, TimeUnit.SECONDS)
+        .followRedirects(true)
         .build()
 
     private var webSocket: WebSocket? = null
@@ -66,13 +69,28 @@ class DshWebSocketClient @Inject constructor(
     }
 
     private fun performConnect() {
-        val sessionId = currentSessionId ?: return
-        val onEvent = onEventCallback ?: return
+        val sessionId = currentSessionId ?: run {
+            logger.e(TAG, "WS performConnect ABORT: sessionId is null")
+            return
+        }
+        val onEvent = onEventCallback ?: run {
+            logger.e(TAG, "WS performConnect ABORT: onEventCallback is null")
+            return
+        }
 
         coroutineScope.launch {
-            val serverAddress = preferences.serverAddress.first() ?: return@launch
-            val sessionToken = preferences.sessionToken.first() ?: return@launch
+            val serverAddress = preferences.serverAddress.first()
+            val sessionToken = preferences.sessionToken.first()
             val coreCookie = preferences.coreCookie.first()
+
+            if (serverAddress.isNullOrBlank()) {
+                logger.e(TAG, "WS performConnect ABORT: serverAddress is null/blank")
+                return@launch
+            }
+            if (sessionToken.isNullOrBlank()) {
+                logger.e(TAG, "WS performConnect ABORT: sessionToken is null/blank")
+                return@launch
+            }
 
             val wsUrl = serverAddress.replace("http", "ws") + "/api/remote.mux"
             val cookieHeader = buildString {

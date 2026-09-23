@@ -42,6 +42,7 @@ class ChatViewModel @Inject constructor(
 
     private var currentSessionId: String? = null
     private var sendTimestamp: Long = 0L
+    private var loadHistoryJob: Job? = null
 
     companion object {
         private const val TAG = "ChatVM"
@@ -57,11 +58,15 @@ class ChatViewModel @Inject constructor(
         logger.i(TAG, "setSession: $sessionId")
         // Load history first, then connect WebSocket for real-time updates
         loadHistory(sessionId)
+        logger.i(TAG, "setSession: calling connectWebSocket for $sessionId")
         repository.connectWebSocket(sessionId)
+        logger.i(TAG, "setSession: connectWebSocket returned for $sessionId")
     }
 
     private fun loadHistory(sessionId: String) {
-        viewModelScope.launch {
+        // Cancel any previous history load to avoid concurrent session/list calls
+        loadHistoryJob?.cancel()
+        loadHistoryJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             logger.i(TAG, "loadHistory: starting for $sessionId")
             try {
