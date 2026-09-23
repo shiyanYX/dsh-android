@@ -262,13 +262,39 @@ class DshRepositoryImpl @Inject constructor(
                             currentToolCalls = mutableListOf()
                         }
                         currentAssistantId = "msg-$seq"
-                        // Extract message content from data.message
+                        // content is a list: [{type:"reasoning", text:"..."}, {type:"text", text:"..."}, {type:"tool-call", ...}]
                         val msgObj = data?.getAsJsonObject("message")
-                        val content = msgObj?.get("content")?.asString
-                            ?: data?.get("content")?.asString
-                            ?: ""
-                        if (content.isNotBlank()) {
-                            currentAssistantContent.append(content)
+                        val contentArray = msgObj?.getAsJsonArray("content")
+                        if (contentArray != null) {
+                            for (item in contentArray) {
+                                val itemObj = item.asJsonObject
+                                val itemType = itemObj.get("type")?.asString ?: ""
+                                when (itemType) {
+                                    "reasoning", "text" -> {
+                                        val text = itemObj.get("text")?.asString ?: ""
+                                        if (text.isNotBlank()) {
+                                            if (currentAssistantContent.isNotEmpty()) currentAssistantContent.append("\n")
+                                            currentAssistantContent.append(text)
+                                        }
+                                    }
+                                    "tool-call" -> {
+                                        val toolCall = ToolCall(
+                                            id = itemObj.get("id")?.asString ?: "tc-$seq",
+                                            toolName = itemObj.get("name")?.asString ?: "unknown",
+                                            args = emptyMap()
+                                        )
+                                        currentToolCalls.add(toolCall)
+                                    }
+                                }
+                            }
+                        } else {
+                            // Fallback: content might be a string (older format)
+                            val contentStr = msgObj?.get("content")?.asString
+                                ?: data?.get("content")?.asString
+                                ?: ""
+                            if (contentStr.isNotBlank()) {
+                                currentAssistantContent.append(contentStr)
+                            }
                         }
                     }
                     "user/message" -> {
@@ -285,9 +311,21 @@ class DshRepositoryImpl @Inject constructor(
                             currentAssistantContent = StringBuilder()
                             currentToolCalls = mutableListOf()
                         }
-                        val content = data?.getAsJsonObject("message")?.get("content")?.asString
-                            ?: data?.get("content")?.asString
-                            ?: ""
+                        // user/message: content is at data.content (list), NOT data.message.content
+                        val contentArray = data?.getAsJsonArray("content")
+                        val textParts = mutableListOf<String>()
+                        if (contentArray != null) {
+                            for (item in contentArray) {
+                                val itemObj = item.asJsonObject
+                                val text = itemObj.get("text")?.asString ?: ""
+                                if (text.isNotBlank()) textParts.add(text)
+                            }
+                        } else {
+                            // Fallback: content might be a string
+                            val contentStr = data?.get("content")?.asString ?: ""
+                            if (contentStr.isNotBlank()) textParts.add(contentStr)
+                        }
+                        val content = textParts.joinToString("\n")
                         if (content.isNotBlank()) {
                             messages.add(Message(
                                 id = "msg-$seq",
@@ -299,6 +337,7 @@ class DshRepositoryImpl @Inject constructor(
                         }
                     }
                     "tool/call" -> {
+                        // tool/call events from the step-level (separate from message content)
                         val toolCall = ToolCall(
                             id = data?.get("callId")?.asString ?: "tc-$seq",
                             toolName = data?.get("name")?.asString ?: "unknown",
@@ -307,7 +346,7 @@ class DshRepositoryImpl @Inject constructor(
                         currentToolCalls.add(toolCall)
                     }
                     "step/end" -> {
-                        // Step end signals end of a tool sequence, keep going
+                        // Step end signals end of a tool sequence
                     }
                 }
             }

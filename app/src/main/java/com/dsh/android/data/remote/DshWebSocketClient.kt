@@ -255,26 +255,54 @@ class DshWebSocketClient @Inject constructor(
         Log.d(TAG, "Follow event: type=$eventType seq=$seq")
 
         when {
-            eventType.contains("message") || eventType.contains("text") -> {
-                val data = event.get("data")
-                val content = when {
-                    data?.isJsonPrimitive == true -> data.asString
-                    data?.isJsonObject == true -> {
-                        data.asJsonObject.get("content")?.asString
-                            ?: data.asJsonObject.get("text")?.asString
-                            ?: data.toString()
-                    }
-                    else -> data?.toString() ?: ""
+            eventType == "assistant/message" || eventType == "user/message" -> {
+                val data = event.getAsJsonObject("data") ?: return
+                val role = if (eventType == "assistant/message")
+                    MessageRole.ASSISTANT else MessageRole.USER
+
+                // content is a list: [{type:"text", text:"..."}, {type:"reasoning", text:"..."}, ...]
+                val contentArray = if (eventType == "assistant/message") {
+                    data.getAsJsonObject("message")?.getAsJsonArray("content")
+                } else {
+                    data.getAsJsonArray("content")
                 }
+
+                val textParts = mutableListOf<String>()
+                val toolCalls = mutableListOf<ToolCall>()
+
+                if (contentArray != null) {
+                    for (item in contentArray) {
+                        val itemObj = item.asJsonObject
+                        val itemType = itemObj.get("type")?.asString ?: ""
+                        when (itemType) {
+                            "text", "reasoning" -> {
+                                val text = itemObj.get("text")?.asString ?: ""
+                                if (text.isNotBlank()) textParts.add(text)
+                            }
+                            "tool-call" -> {
+                                toolCalls.add(ToolCall(
+                                    id = itemObj.get("id")?.asString ?: "tc-$seq",
+                                    toolName = itemObj.get("name")?.asString ?: "unknown",
+                                    args = emptyMap()
+                                ))
+                            }
+                        }
+                    }
+                } else {
+                    // Fallback: content might be a string
+                    val contentStr = data.get("content")?.asString ?: ""
+                    if (contentStr.isNotBlank()) textParts.add(contentStr)
+                }
+
+                val content = textParts.joinToString("\n")
                 if (content.isNotBlank() && content != "null") {
-                    val role = if (eventType.contains("assistant") || eventType.contains("response"))
-                        MessageRole.ASSISTANT else MessageRole.USER
                     val message = Message(
                         id = "msg-$seq",
                         sessionId = sessionId,
                         role = role,
                         content = content,
-                        timestamp = event.get("time")?.asLong ?: System.currentTimeMillis()
+                        timestamp = event.get("time")?.asLong ?: System.currentTimeMillis(),
+                        toolCalls = toolCalls
                     )
                     onEvent(WebSocketEvent.MessageReceived(message))
                 }

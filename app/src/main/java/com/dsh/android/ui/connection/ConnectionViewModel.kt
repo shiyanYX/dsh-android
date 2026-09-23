@@ -46,9 +46,8 @@ class ConnectionViewModel @Inject constructor(
             val serverAddress = preferences.serverAddress.first()
             val username = preferences.username.first()
             val password = preferences.password.first()
-            val coreCookie = preferences.coreCookie.first()
 
-            if (!serverAddress.isNullOrBlank() && !username.isNullOrBlank() && !password.isNullOrBlank() && !coreCookie.isNullOrBlank()) {
+            if (!serverAddress.isNullOrBlank() && !username.isNullOrBlank() && !password.isNullOrBlank()) {
                 Log.d(TAG, "Auto-login: found saved credentials for $username@$serverAddress")
                 _uiState.value = _uiState.value.copy(isAutoLogging = true)
                 val result = repository.login(serverAddress, username, password)
