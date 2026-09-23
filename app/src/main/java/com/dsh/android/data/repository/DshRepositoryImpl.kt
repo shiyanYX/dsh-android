@@ -66,16 +66,25 @@ class DshRepositoryImpl @Inject constructor(
                     val cwd = obj.get("cwd")?.asString ?: ""
                     val projections = obj.getAsJsonObject("projections")
                     val values = projections?.getAsJsonObject("values")
-                    val title = values?.get("title")?.asString ?: sessionId
+
+                    // Handle title: may be missing, null (JsonNull), or a real string
+                    val titleElement = values?.get("title")
+                    val title = when {
+                        titleElement == null -> sessionId
+                        titleElement.isJsonNull -> sessionId
+                        else -> titleElement.asString.ifBlank { sessionId }
+                    }
 
                     // Extract model from modelSelection
                     val modelSelection = values?.getAsJsonObject("modelSelection")
                     val lastUsed = modelSelection?.getAsJsonObject("lastUsed")
                     val model = lastUsed?.get("model")?.asString
 
-                    // Extract subagent info
-                    val subagent = values?.getAsJsonObject("subagent")
-                    val isSubagent = subagent != null && !subagent.isJsonNull
+                    // Extract subagent info (handle JsonNull safely)
+                    val subagentElement = values?.get("subagent")
+                    val subagent = if (subagentElement != null && !subagentElement.isJsonNull)
+                        subagentElement.asJsonObject else null
+                    val isSubagent = subagent != null
                     val subagentLabel = subagent?.get("label")?.asString
                     val subagentMode = subagent?.get("mode")?.asString
 
