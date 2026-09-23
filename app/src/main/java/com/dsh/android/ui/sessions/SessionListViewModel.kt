@@ -33,7 +33,8 @@ data class SessionListUiState(
     val showSubagents: Boolean = false, // false = hide subagent sessions
     val showCreateDialog: Boolean = false,
     val availableWorkspaces: List<String> = emptyList(), // known workspace paths
-    val selectedWorkspace: String = "" // selected workspace for new session
+    val selectedWorkspace: String = "", // selected workspace for new session
+    val navigateToSession: String? = null // session ID to navigate to after creation
 )
 
 @HiltViewModel
@@ -150,8 +151,11 @@ class SessionListViewModel @Inject constructor(
             val cwd = _uiState.value.selectedWorkspace
             val result = repository.createSession("New Session", cwd)
             result.fold(
-                onSuccess = {
-                    _uiState.value = _uiState.value.copy(showCreateDialog = false)
+                onSuccess = { session ->
+                    _uiState.value = _uiState.value.copy(
+                        showCreateDialog = false,
+                        navigateToSession = session.id
+                    )
                     loadSessions()
                 },
                 onFailure = { e ->
@@ -159,6 +163,10 @@ class SessionListViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    fun clearNavigateToSession() {
+        _uiState.value = _uiState.value.copy(navigateToSession = null)
     }
 
     fun deleteSession(sessionId: String) {

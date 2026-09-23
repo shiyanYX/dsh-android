@@ -28,7 +28,8 @@ data class SettingsUiState(
     val logCount: Int = 0,
     val isFileLogging: Boolean = false,
     val currentLogFile: String? = null,
-    val lastLogMessage: String? = null
+    val lastLogMessage: String? = null,
+    val pendingLogContent: String? = null // log content ready to copy
 )
 
 @HiltViewModel
@@ -97,26 +98,25 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * Export ring buffer to public Downloads directory (accessible via file manager)
+     * Export ring buffer - copies log content to clipboard via UI state
      */
     fun exportLogBuffer() {
-        viewModelScope.launch {
-            try {
-                val file = logger.exportRingBuffer()
-                if (file != null) {
-                    _uiState.value = _uiState.value.copy(
-                        lastLogMessage = "✅ 日志已保存: ${file.absolutePath}"
-                    )
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        lastLogMessage = "❌ 导出失败: 无法生成日志文件"
-                    )
-                }
-            } catch (e: Exception) {
+        try {
+            val content = logger.getRecentLogsFormatted()
+            if (content.isNotBlank()) {
                 _uiState.value = _uiState.value.copy(
-                    lastLogMessage = "❌ 导出失败: ${e.message}"
+                    lastLogMessage = "✅ 日志已准备（${content.length} 字符）",
+                    pendingLogContent = content
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(
+                    lastLogMessage = "❌ 日志为空"
                 )
             }
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                lastLogMessage = "❌ 导出失败: ${e.message}"
+            )
         }
     }
 

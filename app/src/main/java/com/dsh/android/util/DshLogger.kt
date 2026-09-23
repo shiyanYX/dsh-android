@@ -204,6 +204,22 @@ class DshLogger @Inject constructor(
         _recentLogs.value = emptyList()
     }
 
+    /** Get formatted log content for clipboard copy */
+    fun getRecentLogsFormatted(): String {
+        return buildString {
+            appendLine("═══════════════════════════════════════════")
+            appendLine("DSH Android Log Export")
+            appendLine("Time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())}")
+            appendLine("Entries: ${ringBuffer.size}")
+            appendLine("Device: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} (API ${android.os.Build.VERSION.SDK_INT})")
+            appendLine("═══════════════════════════════════════════")
+            appendLine()
+            for (entry in ringBuffer) {
+                appendLine(entry.format())
+            }
+        }
+    }
+
     // ─── Helpers ───────────────────────────────────────────────
 
     private fun getAppVersion(): String {

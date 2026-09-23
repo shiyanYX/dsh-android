@@ -38,6 +38,14 @@ fun SessionListScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    // Navigate to newly created session
+    LaunchedEffect(uiState.navigateToSession) {
+        uiState.navigateToSession?.let { sessionId ->
+            viewModel.clearNavigateToSession()
+            onSessionClick(sessionId)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(

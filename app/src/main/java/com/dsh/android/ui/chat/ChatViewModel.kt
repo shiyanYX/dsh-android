@@ -67,7 +67,7 @@ class ChatViewModel @Inject constructor(
             try {
                 // Hard timeout: 60 seconds max for entire history load
                 val result = withTimeoutOrNull(60_000L) {
-                    repository.getSessionHistory(sessionId, maxMessages = 200)
+                    repository.getSessionHistory(sessionId, maxMessages = 50)
                 }
 
                 if (result == null) {

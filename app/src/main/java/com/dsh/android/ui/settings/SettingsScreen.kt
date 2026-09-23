@@ -2,7 +2,9 @@ package com.dsh.android.ui.settings
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Logout
@@ -51,6 +53,7 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             // Server Settings
             Text(
@@ -174,7 +177,20 @@ fun SettingsScreen(
                         onClick = { viewModel.exportLogBuffer() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("导出最近 1000 条日志")
+                        Text("📋 复制最近日志到剪贴板")
+                    }
+
+                    if (uiState.pendingLogContent != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(uiState.pendingLogContent!!))
+                                Toast.makeText(context, "日志已复制到剪贴板", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("✅ 点击复制（${uiState.pendingLogContent!!.length} 字符）")
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -224,21 +240,6 @@ fun SettingsScreen(
                                 MaterialTheme.colorScheme.primary
                             }
                         )
-                        if (uiState.lastLogMessage!!.contains("/")) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            TextButton(
-                                onClick = {
-                                    // Extract path after the emoji
-                                    val path = uiState.lastLogMessage!!
-                                        .replace(Regex("[✅🔴❌]\\s*"), "")
-                                        .trim()
-                                    clipboardManager.setText(AnnotatedString(path))
-                                    Toast.makeText(context, "路径已复制", Toast.LENGTH_SHORT).show()
-                                }
-                            ) {
-                                Text("📋 复制路径", style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
                     }
                 }
             }
