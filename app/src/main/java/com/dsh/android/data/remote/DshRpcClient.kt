@@ -33,7 +33,8 @@ private const val TAG = "DshRpcClient"
 @Singleton
 class DshRpcClient @Inject constructor(
     private val preferences: DshPreferences,
-    @Named("plain") private val httpClient: OkHttpClient
+    @Named("plain") private val httpClient: OkHttpClient,
+    private val logger: com.dsh.android.util.DshLogger
 ) {
     private val gson = Gson()
     private val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
@@ -207,23 +208,37 @@ class DshRpcClient @Inject constructor(
             .addHeader("Cookie", cookieHeader)
             .build()
 
-        Log.d(TAG, "RPC: POST $endpoint (rpcId=$rpcId)")
+        logger.i(TAG, "RPC POST $endpoint rpcId=$rpcId wireKey=$wireKey")
+        logger.d(TAG, "Request body: ${gson.toJson(body).take(1000)}")
+        logger.d(TAG, "Cookie header: ${cookieHeader.take(80)}...")
 
+        val startTime = System.currentTimeMillis()
         val response = httpClient.newCall(request).execute()
+        val durationMs = System.currentTimeMillis() - startTime
+        val httpCode = response.code
         val responseBody = response.body?.string() ?: throw Exception("Empty response")
         response.close()
+
+        logger.d(TAG, "Response HTTP $httpCode (${durationMs}ms, ${responseBody.length} bytes)")
+        logger.d(TAG, "Response body: ${responseBody.take(2000)}")
 
         val json = JsonParser.parseString(responseBody).asJsonObject
 
         val result = json.getAsJsonObject("result")
-            ?: throw Exception("Invalid RPC response: $responseBody")
+            ?: throw Exception("Invalid RPC response (no 'result' key): ${responseBody.take(500)}")
 
         if (result.get("ok")?.asBoolean == true) {
-            return result.getAsJsonObject("value") ?: JsonObject()
+            val value = result.getAsJsonObject("value") ?: JsonObject()
+            logger.i(TAG, "RPC OK $endpoint (${durationMs}ms)")
+            logger.d(TAG, "RPC value keys: ${value.keySet()}")
+            return value
         } else {
             val error = result.getAsJsonObject("error")
             val code = error?.get("code")?.asString ?: "unknown"
             val message = error?.get("message")?.asString ?: "Unknown error"
+            val details = error?.get("details")?.toString() ?: ""
+            logger.e(TAG, "RPC ERROR $endpoint [$code]: $message")
+            if (details.isNotBlank()) logger.d(TAG, "Error details: $details")
             throw Exception("RPC error [$code]: $message")
         }
     }

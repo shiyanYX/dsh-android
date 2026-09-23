@@ -20,7 +20,8 @@ private const val TAG = "DshRepository"
 class DshRepositoryImpl @Inject constructor(
     private val rpcClient: DshRpcClient,
     private val preferences: DshPreferences,
-    private val wsClient: DshWebSocketClient
+    private val wsClient: DshWebSocketClient,
+    private val logger: com.dsh.android.util.DshLogger
 ) : DshRepository {
 
     private val _webSocketEvents = MutableSharedFlow<WebSocketEvent>(replay = 0)

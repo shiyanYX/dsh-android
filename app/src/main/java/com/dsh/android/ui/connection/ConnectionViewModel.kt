@@ -30,7 +30,8 @@ data class ConnectionUiState(
 @HiltViewModel
 class ConnectionViewModel @Inject constructor(
     private val repository: DshRepository,
-    private val preferences: DshPreferences
+    private val preferences: DshPreferences,
+    private val logger: com.dsh.android.util.DshLogger
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ConnectionUiState())
@@ -48,7 +49,7 @@ class ConnectionViewModel @Inject constructor(
             val password = preferences.password.first()
 
             if (!serverAddress.isNullOrBlank() && !username.isNullOrBlank() && !password.isNullOrBlank()) {
-                Log.d(TAG, "Auto-login: found saved credentials for $username@$serverAddress")
+                logger.i(TAG, "Auto-login: credentials found for $username@$serverAddress")
                 _uiState.value = _uiState.value.copy(isAutoLogging = true)
                 val result = repository.login(serverAddress, username, password)
                 result.fold(

@@ -33,7 +33,8 @@ data class ChatUiState(
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val repository: DshRepository
+    private val repository: DshRepository,
+    private val logger: com.dsh.android.util.DshLogger
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -42,6 +43,10 @@ class ChatViewModel @Inject constructor(
     private var currentSessionId: String? = null
     private var sendTimestamp: Long = 0L
 
+    companion object {
+        private const val TAG = "ChatVM"
+    }
+
     init {
         observeWebSocketEvents()
         loadModels()
@@ -49,6 +54,7 @@ class ChatViewModel @Inject constructor(
 
     fun setSession(sessionId: String) {
         currentSessionId = sessionId
+        logger.i(TAG, "setSession: $sessionId")
         // Load history first, then connect WebSocket for real-time updates
         loadHistory(sessionId)
         repository.connectWebSocket(sessionId)
@@ -57,18 +63,22 @@ class ChatViewModel @Inject constructor(
     private fun loadHistory(sessionId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            logger.i(TAG, "loadHistory: starting for $sessionId")
             try {
                 val result = repository.getSessionHistory(sessionId, maxMessages = 200)
                 result.fold(
                     onSuccess = { messages ->
-                        Log.d("ChatVM", "Loaded ${messages.size} messages")
+                        logger.i(TAG, "loadHistory: OK - ${messages.size} messages loaded")
+                        for ((i, msg) in messages.withIndex()) {
+                            logger.d(TAG, "  msg[$i] role=${msg.role} content=${msg.content.take(60)} toolCalls=${msg.toolCalls.size}")
+                        }
                         _uiState.value = _uiState.value.copy(
                             messages = messages,
                             isLoading = false
                         )
                     },
                     onFailure = { e ->
-                        Log.e("ChatVM", "Failed to load history: ${e.message}", e)
+                        logger.e(TAG, "loadHistory: FAILED - ${e.message}", e)
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             error = "加载历史失败: ${e.message}"
@@ -76,7 +86,7 @@ class ChatViewModel @Inject constructor(
                     }
                 )
             } catch (e: Exception) {
-                Log.e("ChatVM", "Exception loading history: ${e.message}", e)
+                logger.e(TAG, "loadHistory: EXCEPTION - ${e.message}", e)
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = "加载历史异常: ${e.message}"
@@ -105,14 +115,18 @@ class ChatViewModel @Inject constructor(
             repository.webSocketEvents.collect { event ->
                 when (event) {
                     is WebSocketEvent.Connected -> {
+                        logger.i(TAG, "WS connected")
                         _uiState.value = _uiState.value.copy(isLoading = false)
                     }
                     is WebSocketEvent.Disconnected -> {
-                        _uiState.value = _uiState.value.copy(error = "连接断开")
+                        logger.w(TAG, "WS disconnected: ${event.reason}")
+                        _uiState.value = _uiState.value.copy(error = "连接断开: ${event.reason}")
                     }
                     is WebSocketEvent.MessageReceived -> {
+                        val msg = event.message
+                        logger.i(TAG, "WS message: role=${msg.role} content=${msg.content.take(80)} toolCalls=${msg.toolCalls.size}")
                         val ttft = if (sendTimestamp > 0) System.currentTimeMillis() - sendTimestamp else 0L
-                        val messages = _uiState.value.messages + event.message
+                        val messages = _uiState.value.messages + msg
                         val stats = _uiState.value.tokenStats.copy(
                             turns = _uiState.value.tokenStats.turns + 1,
                             ttft = ttft
@@ -123,6 +137,7 @@ class ChatViewModel @Inject constructor(
                         )
                     }
                     is WebSocketEvent.ToolCallReceived -> {
+                        logger.i(TAG, "WS tool call: ${event.toolCall.toolName} (${event.toolCall.id})")
                         val toolCalls = _uiState.value.toolCalls + event.toolCall
                         val stats = _uiState.value.tokenStats.copy(
                             steps = _uiState.value.tokenStats.steps + 1
@@ -134,9 +149,11 @@ class ChatViewModel @Inject constructor(
                         )
                     }
                     is WebSocketEvent.AgentStatusChanged -> {
+                        logger.d(TAG, "WS status: ${event.status}")
                         _uiState.value = _uiState.value.copy(agentStatus = event.status)
                     }
                     is WebSocketEvent.Error -> {
+                        logger.e(TAG, "WS error: ${event.error.message}")
                         _uiState.value = _uiState.value.copy(error = event.error.message)
                     }
                 }

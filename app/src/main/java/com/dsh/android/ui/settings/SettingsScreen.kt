@@ -147,6 +147,83 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Logging Settings
+            Text(
+                text = "日志",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedCard(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    // Ring buffer info
+                    Text("环形缓冲: 最近 ${uiState.logCount} 条日志")
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Export ring buffer button
+                    OutlinedButton(
+                        onClick = { viewModel.exportLogBuffer() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("导出最近 1000 条日志")
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // File logging toggle
+                    Text(
+                        text = if (uiState.isFileLogging) "正在记录日志到文件..." else "持续日志记录",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (uiState.isFileLogging) {
+                        Text(
+                            text = "文件: ${uiState.currentLogFile ?: "未知"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { viewModel.stopFileLogging() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("停止记录")
+                        }
+                    } else {
+                        Button(
+                            onClick = { viewModel.startFileLogging() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("开始记录日志到文件")
+                        }
+                    }
+
+                    if (uiState.lastLogMessage != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = uiState.lastLogMessage!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (uiState.lastLogMessage!!.contains("失败") || uiState.lastLogMessage!!.contains("错误")) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // About
             Text(
                 text = "关于",

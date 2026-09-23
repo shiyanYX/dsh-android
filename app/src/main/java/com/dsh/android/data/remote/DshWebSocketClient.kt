@@ -32,7 +32,8 @@ private const val TAG = "DshWebSocketClient"
 @Singleton
 class DshWebSocketClient @Inject constructor(
     private val preferences: DshPreferences,
-    @Named("plain") private val httpClient: OkHttpClient
+    @Named("plain") private val httpClient: OkHttpClient,
+    private val logger: com.dsh.android.util.DshLogger
 ) {
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -79,7 +80,9 @@ class DshWebSocketClient @Inject constructor(
                 if (!coreCookie.isNullOrBlank()) append("; $coreCookie")
             }
 
-            Log.d(TAG, "Connecting WebSocket to $wsUrl")
+            logger.i(TAG, "Connecting to $wsUrl for session=$sessionId")
+            logger.d(TAG, "Cookie: ${cookieHeader.take(80)}...")
+
             val request = Request.Builder()
                 .url(wsUrl)
                 .addHeader("Cookie", cookieHeader)
@@ -87,7 +90,7 @@ class DshWebSocketClient @Inject constructor(
 
             webSocket = client.newWebSocket(request, object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
-                    Log.d(TAG, "WebSocket connected")
+                    logger.i(TAG, "WebSocket connected (HTTP ${response.code})")
                     reconnectAttempt = 0
                     onEvent(WebSocketEvent.Connected(sessionId))
                     // Start following the session for real-time events
@@ -98,7 +101,7 @@ class DshWebSocketClient @Inject constructor(
                     try {
                         val json = gson.fromJson(text, JsonObject::class.java)
                         val type = json.get("type")?.asString
-                        Log.d(TAG, "WS message type: $type")
+                        logger.d(TAG, "WS ← type=$type (${text.length} bytes)")
 
                         when (type) {
                             "server-response" -> {
@@ -106,38 +109,50 @@ class DshWebSocketClient @Inject constructor(
                                 val result = json.getAsJsonObject("result")
                                 if (result?.get("ok")?.asBoolean == true) {
                                     val value = result.getAsJsonObject("value")
+                                    val valueKeys = value?.keySet() ?: emptySet()
+                                    logger.d(TAG, "WS response OK rpcId=$rpcId value keys=$valueKeys")
                                     // Check if this is a follow stream initial response
                                     if (value?.has("stream") == true || value?.has("events") == true) {
+                                        logger.d(TAG, "WS follow stream detected, parsing events...")
                                         parseFollowStreamEvents(value, sessionId, onEvent)
                                     }
                                 } else {
                                     val error = result?.getAsJsonObject("error")
-                                    Log.w(TAG, "RPC error: ${error?.get("message")?.asString}")
+                                    val errCode = error?.get("code")?.asString
+                                    val errMsg = error?.get("message")?.asString
+                                    logger.e(TAG, "WS RPC error: [$errCode] $errMsg")
                                 }
                             }
                             "server-event" -> {
                                 // Streaming event from session/follow
                                 val event = json.getAsJsonObject("event")
                                 if (event != null) {
+                                    val eventType = event.get("type")?.asString
+                                    val seq = event.get("seq")?.asLong
+                                    logger.d(TAG, "WS event: type=$eventType seq=$seq")
                                     parseFollowEvent(event, sessionId, onEvent)
                                 }
                             }
+                            else -> {
+                                logger.w(TAG, "WS unknown message type: $type")
+                            }
                         }
                     } catch (e: Exception) {
-                        Log.e(TAG, "WS message parse error", e)
+                        logger.e(TAG, "WS message parse error: ${text.take(200)}", e)
                     }
                 }
 
                 override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                    logger.w(TAG, "WS closing: code=$code reason=$reason")
                     webSocket.close(1000, null)
                     if (!isManualDisconnect) {
-                        onEvent(WebSocketEvent.Disconnected("连接关闭"))
+                        onEvent(WebSocketEvent.Disconnected("连接关闭 code=$code"))
                         scheduleReconnect()
                     }
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    Log.e(TAG, "WebSocket error", t)
+                    logger.e(TAG, "WS failure: ${response?.code ?: "no response"} - ${t.message}", t)
                     if (!isManualDisconnect) {
                         onEvent(WebSocketEvent.Error(t))
                         scheduleReconnect()
