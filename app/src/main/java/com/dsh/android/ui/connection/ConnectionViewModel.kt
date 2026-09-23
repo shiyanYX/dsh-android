@@ -49,16 +49,18 @@ class ConnectionViewModel @Inject constructor(
             val password = preferences.password.first()
 
             if (!serverAddress.isNullOrBlank() && !username.isNullOrBlank() && !password.isNullOrBlank()) {
-                logger.i(TAG, "Auto-login: credentials found for $username@$serverAddress")
+                logger.i(TAG, "AUTO-LOGIN: found credentials for $username@$serverAddress")
+                logger.d(TAG, "AUTO-LOGIN: server=$serverAddress user=$username pwd=${"*".repeat(password.length)}")
                 _uiState.value = _uiState.value.copy(isAutoLogging = true)
+                logger.i(TAG, "AUTO-LOGIN: calling repository.login()...")
                 val result = repository.login(serverAddress, username, password)
                 result.fold(
                     onSuccess = {
-                        Log.d(TAG, "Auto-login successful")
+                        logger.i(TAG, "AUTO-LOGIN: SUCCESS")
                         _uiState.value = _uiState.value.copy(isAutoLogging = false, isConnected = true)
                     },
                     onFailure = { e ->
-                        Log.w(TAG, "Auto-login failed: ${e.message}")
+                        logger.e(TAG, "AUTO-LOGIN: FAILED - ${e.message}")
                         // Fill in saved data for manual retry
                         _uiState.value = _uiState.value.copy(
                             isAutoLogging = false,
@@ -70,6 +72,7 @@ class ConnectionViewModel @Inject constructor(
                     }
                 )
             } else {
+                logger.i(TAG, "AUTO-LOGIN: no saved credentials (server=${serverAddress ?: "null"} user=${username ?: "null"} pwd=${if (password != null) "set" else "null"})")
                 // No saved credentials, try to fill in what we have
                 if (!serverAddress.isNullOrBlank()) {
                     parseServerAddress(serverAddress)
@@ -146,8 +149,10 @@ class ConnectionViewModel @Inject constructor(
             if (basePath.isNotBlank()) append("/$basePath")
         }
 
+        logger.i(TAG, "MANUAL CONNECT: server=$serverAddress user=${state.username}")
         viewModelScope.launch {
             _uiState.value = state.copy(isLoading = true, error = null)
+            logger.i(TAG, "MANUAL CONNECT: calling repository.login()...")
             val result = repository.login(serverAddress, state.username, state.password)
             result.fold(
                 onSuccess = {

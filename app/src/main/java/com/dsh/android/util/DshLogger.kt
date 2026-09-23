@@ -43,7 +43,7 @@ class DshLogger @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     companion object {
-        private const val RING_BUFFER_SIZE = 1000
+        private const val RING_BUFFER_SIZE = 5000
         private const val TAG = "DshLogger"
     }
 

@@ -48,10 +48,14 @@ class DshRpcClient @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 val baseUrl = serverAddress.trimEnd('/')
+                logger.i(TAG, "═══ AUTH START ═══ server=$baseUrl user=$username")
 
                 // Step 1: Login
-                Log.d(TAG, "Step 1: Login to $baseUrl")
+                logger.i(TAG, "AUTH Step 1: POST $baseUrl/dsh-webui-auth/login")
                 val loginBody = gson.toJson(mapOf("username" to username, "password" to password))
+                logger.d(TAG, "AUTH request body: username=$username password=${"*".repeat(password.length)}")
+
+                val t1 = System.currentTimeMillis()
                 val loginRequest = Request.Builder()
                     .url("$baseUrl/dsh-webui-auth/login")
                     .post(loginBody.toRequestBody(JSON_MEDIA))
@@ -60,13 +64,19 @@ class DshRpcClient @Inject constructor(
                 val loginResponse = httpClient.newCall(loginRequest).execute()
                 val loginResponseBody = loginResponse.body?.string() ?: ""
                 loginResponse.close()
+                val duration1 = System.currentTimeMillis() - t1
+
+                logger.d(TAG, "AUTH login response HTTP ${loginResponse.code} (${duration1}ms)")
+                logger.d(TAG, "AUTH login response body: ${loginResponseBody.take(500)}")
 
                 val loginJson = JsonParser.parseString(loginResponseBody).asJsonObject
                 val isOk = loginJson.get("ok")?.asBoolean ?: false
                 if (!isOk) {
                     val error = loginJson.get("error")?.asString
+                    logger.e(TAG, "AUTH login FAILED: ok=false error=$error")
                     return@withContext Result.failure(Exception(friendlyError(error)))
                 }
+                logger.i(TAG, "AUTH login OK")
 
                 // Extract dsh_wua_session from Set-Cookie header
                 val wuaSession = loginResponse.header("Set-Cookie")
@@ -76,17 +86,20 @@ class DshRpcClient @Inject constructor(
                     ?.trim()
 
                 if (wuaSession.isNullOrBlank()) {
+                    logger.e(TAG, "AUTH login: no dsh_wua_session in Set-Cookie headers")
+                    logger.d(TAG, "AUTH Set-Cookie headers: ${loginResponse.headers("Set-Cookie")}")
                     return@withContext Result.failure(Exception("登录响应未包含会话 cookie"))
                 }
-                Log.d(TAG, "Got dsh_wua_session: ${wuaSession.take(20)}...")
+                logger.i(TAG, "AUTH Got dsh_wua_session: ${wuaSession.take(30)}...")
 
                 // Step 2: Token exchange
                 val redirect = loginJson.get("redirect")?.asString
                     ?: return@withContext Result.failure(Exception("服务器未返回重定向地址"))
 
                 val fullRedirectUrl = if (redirect.startsWith("http")) redirect else "$baseUrl$redirect"
-                Log.d(TAG, "Step 2: Token exchange via $fullRedirectUrl")
+                logger.i(TAG, "AUTH Step 2: GET $fullRedirectUrl")
 
+                val t2 = System.currentTimeMillis()
                 val exchangeRequest = Request.Builder()
                     .url(fullRedirectUrl)
                     .addHeader("Cookie", "dsh_wua_session=$wuaSession")
@@ -94,10 +107,11 @@ class DshRpcClient @Inject constructor(
                     .build()
 
                 val exchangeResponse = httpClient.newCall(exchangeRequest).execute()
+                val duration2 = System.currentTimeMillis() - t2
                 val allSetCookies = exchangeResponse.headers("Set-Cookie")
-                Log.d(TAG, "Token exchange: ${exchangeResponse.code}, Set-Cookie count: ${allSetCookies.size}")
+                logger.i(TAG, "AUTH exchange response HTTP ${exchangeResponse.code} (${duration2}ms) Set-Cookie count=${allSetCookies.size}")
                 for (c in allSetCookies) {
-                    Log.d(TAG, "  Set-Cookie: ${c.take(80)}...")
+                    logger.d(TAG, "AUTH Set-Cookie: ${c.take(120)}")
                 }
 
                 // Extract dsh-auth-* cookie
@@ -113,7 +127,16 @@ class DshRpcClient @Inject constructor(
 
                 exchangeResponse.close()
 
+                if (coreAuthCookie != null) {
+                    logger.i(TAG, "AUTH Got dsh-auth cookie: ${coreAuthCookie.take(60)}...")
+                } else {
+                    logger.w(TAG, "AUTH No dsh-auth-* cookie found in Set-Cookie headers")
+                    logger.d(TAG, "AUTH All Set-Cookie values: ${allSetCookies.map { it.take(50) }}")
+                }
+
                 // Follow the 303 redirect to / to complete the exchange
+                logger.i(TAG, "AUTH Step 3: GET $baseUrl/ (follow redirect)")
+                val t3 = System.currentTimeMillis()
                 val followRequest = Request.Builder()
                     .url(baseUrl + "/")
                     .addHeader("Cookie", "dsh_wua_session=$wuaSession" +
@@ -121,18 +144,18 @@ class DshRpcClient @Inject constructor(
                     .get()
                     .build()
                 val followResponse = httpClient.newCall(followRequest).execute()
+                val duration3 = System.currentTimeMillis() - t3
+                logger.i(TAG, "AUTH follow response HTTP ${followResponse.code} (${duration3}ms)")
                 followResponse.close()
 
                 // Store both cookies
+                logger.i(TAG, "AUTH Saving credentials to encrypted storage")
                 preferences.saveSessionToken(wuaSession)
                 if (coreAuthCookie != null) {
-                    Log.d(TAG, "Got core auth cookie: ${coreAuthCookie.take(50)}...")
                     preferences.saveCoreCookie(coreAuthCookie)
-                } else {
-                    Log.w(TAG, "No dsh-auth-* cookie found in token exchange response")
                 }
 
-                Log.d(TAG, "Authentication complete")
+                logger.i(TAG, "═══ AUTH COMPLETE ═══")
                 Result.success(Unit)
             } catch (e: Exception) {
                 Log.e(TAG, "Authentication failed", e)

@@ -184,8 +184,11 @@ class DshWebSocketClient @Inject constructor(
                 })
             })
         }
-        Log.d(TAG, "Sending session/follow for $sessionId")
-        webSocket?.send(gson.toJson(message))
+        logger.i(TAG, "WS SEND session/follow rpcId=$rpcId session=$sessionId")
+        val jsonStr = gson.toJson(message)
+        logger.d(TAG, "WS SEND body: ${jsonStr.take(500)}")
+        val sent = webSocket?.send(jsonStr) ?: false
+        logger.i(TAG, "WS SEND session/follow sent=$sent")
     }
 
     /**
@@ -210,17 +213,19 @@ class DshWebSocketClient @Inject constructor(
                 })
             })
         }
-        Log.d(TAG, "Sending session/prompt: ${content.take(50)}")
-        webSocket?.send(gson.toJson(message))
+        logger.i(TAG, "WS SEND session/prompt rpcId=$rpcId session=$sessionId content=${content.take(50)}")
+        val jsonStr = gson.toJson(message)
+        logger.d(TAG, "WS SEND body: ${jsonStr.take(500)}")
+        val sent = webSocket?.send(jsonStr) ?: false
+        logger.i(TAG, "WS SEND session/prompt sent=$sent")
     }
 
     fun confirmToolCall(sessionId: String, callId: String, approved: Boolean) {
-        // DSH uses session/prompt with tool confirmation in the content
-        // For now, log it - tool confirm protocol needs further investigation
-        Log.d(TAG, "Tool confirm: $callId approved=$approved")
+        logger.i(TAG, "WS TOOL CONFIRM: callId=$callId approved=$approved session=$sessionId")
     }
 
     fun disconnect() {
+        logger.i(TAG, "WS DISCONNECT: manual=$isManualDisconnect")
         isManualDisconnect = true
         coroutineScope.cancel()
         webSocket?.close(1000, "Client disconnect")
@@ -230,10 +235,13 @@ class DshWebSocketClient @Inject constructor(
     }
 
     private fun scheduleReconnect() {
-        if (isManualDisconnect || reconnectAttempt >= maxReconnectAttempts) return
+        if (isManualDisconnect || reconnectAttempt >= maxReconnectAttempts) {
+            logger.w(TAG, "WS RECONNECT skipped: manual=$isManualDisconnect attempts=$reconnectAttempt/$maxReconnectAttempts")
+            return
+        }
         reconnectAttempt++
         val delayMs = minOf(1000L * (1 shl (reconnectAttempt - 1)), 30_000L)
-        Log.d(TAG, "Scheduling reconnect in ${delayMs}ms (attempt $reconnectAttempt)")
+        logger.i(TAG, "WS RECONNECT scheduled in ${delayMs}ms (attempt $reconnectAttempt/$maxReconnectAttempts)")
         coroutineScope.launch {
             delay(delayMs)
             performConnect()
@@ -250,6 +258,7 @@ class DshWebSocketClient @Inject constructor(
         onEvent: (WebSocketEvent) -> Unit
     ) {
         val events = value?.getAsJsonArray("events") ?: return
+        logger.i(TAG, "WS PARSE: follow stream has ${events.size()} events")
         for (eventElement in events) {
             val event = eventElement.asJsonObject
             parseFollowEvent(event, sessionId, onEvent)
@@ -267,13 +276,20 @@ class DshWebSocketClient @Inject constructor(
     ) {
         val eventType = event.get("type")?.asString ?: return
         val seq = event.get("seq")?.asLong ?: 0
-        Log.d(TAG, "Follow event: type=$eventType seq=$seq")
+        val time = event.get("time")?.asLong
+        logger.d(TAG, "WS EVENT: type=$eventType seq=$seq time=$time")
 
         when {
             eventType == "assistant/message" || eventType == "user/message" -> {
-                val data = event.getAsJsonObject("data") ?: return
+                val data = event.getAsJsonObject("data")
+                if (data == null) {
+                    logger.w(TAG, "WS EVENT $eventType: data is null")
+                    return
+                }
                 val role = if (eventType == "assistant/message")
                     MessageRole.ASSISTANT else MessageRole.USER
+
+                logger.d(TAG, "WS EVENT $eventType: data keys=${data.keySet()}")
 
                 // content is a list: [{type:"text", text:"..."}, {type:"reasoning", text:"..."}, ...]
                 val contentArray = if (eventType == "assistant/message") {
@@ -281,6 +297,8 @@ class DshWebSocketClient @Inject constructor(
                 } else {
                     data.getAsJsonArray("content")
                 }
+
+                logger.d(TAG, "WS EVENT $eventType: contentArray size=${contentArray?.size()}")
 
                 val textParts = mutableListOf<String>()
                 val toolCalls = mutableListOf<ToolCall>()
@@ -310,6 +328,7 @@ class DshWebSocketClient @Inject constructor(
                 }
 
                 val content = textParts.joinToString("\n")
+                logger.d(TAG, "WS EVENT $eventType: parsed content=${content.take(80)} toolCalls=${toolCalls.size}")
                 if (content.isNotBlank() && content != "null") {
                     val message = Message(
                         id = "msg-$seq",
@@ -319,11 +338,15 @@ class DshWebSocketClient @Inject constructor(
                         timestamp = event.get("time")?.asLong ?: System.currentTimeMillis(),
                         toolCalls = toolCalls
                     )
+                    logger.i(TAG, "WS EMIT MessageReceived: role=$role content=${content.take(60)}")
                     onEvent(WebSocketEvent.MessageReceived(message))
+                } else {
+                    logger.w(TAG, "WS EVENT $eventType: content empty after parsing")
                 }
             }
             eventType.contains("tool") -> {
                 val data = event.get("data")
+                logger.d(TAG, "WS EVENT $eventType: data=${data?.toString()?.take(200)}")
                 if (data?.isJsonObject == true) {
                     val obj = data.asJsonObject
                     val toolCall = ToolCall(
@@ -331,11 +354,14 @@ class DshWebSocketClient @Inject constructor(
                         toolName = obj.get("tool")?.asString ?: obj.get("name")?.asString ?: "unknown",
                         args = emptyMap()
                     )
+                    logger.i(TAG, "WS EMIT ToolCallReceived: name=${toolCall.toolName} id=${toolCall.id}")
                     onEvent(WebSocketEvent.ToolCallReceived(toolCall))
                 }
             }
             eventType.contains("status") || eventType.contains("agent") -> {
                 val data = event.get("data")
+                val statusStr = data?.asString ?: data?.toString()
+                logger.d(TAG, "WS EVENT $eventType: data=$statusStr")
                 val status = when {
                     data?.asString == "running" -> AgentStatus.RUNNING
                     data?.asString == "waiting" -> AgentStatus.WAITING_CONFIRMATION
@@ -349,6 +375,8 @@ class DshWebSocketClient @Inject constructor(
                     }
                     else -> AgentStatus.IDLE
                 }
+                logger.i(TAG, "WS EMIT AgentStatusChanged: $status")
+                onEvent(WebSocketEvent.AgentStatusChanged(status))
                 onEvent(WebSocketEvent.AgentStatusChanged(status))
             }
             else -> {

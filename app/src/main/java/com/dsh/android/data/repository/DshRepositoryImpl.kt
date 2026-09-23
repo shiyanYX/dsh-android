@@ -31,32 +31,48 @@ class DshRepositoryImpl @Inject constructor(
 
     override suspend fun login(serverAddress: String, username: String, password: String): Result<Unit> {
         return try {
+            logger.i(TAG, "═══ LOGIN START ═══ server=$serverAddress user=$username")
             preferences.saveServerAddress(serverAddress)
-            Log.d(TAG, "Logging in to $serverAddress as $username")
+            logger.d(TAG, "LOGIN server address saved to preferences")
 
             val result = rpcClient.authenticate(serverAddress, username, password)
             if (result.isSuccess) {
+                logger.i(TAG, "LOGIN auth success, saving credentials")
                 preferences.saveCredentials(username, password, true)
+                logger.i(TAG, "═══ LOGIN COMPLETE ═══")
+            } else {
+                logger.e(TAG, "LOGIN auth failed: ${result.exceptionOrNull()?.message}")
             }
             result
         } catch (e: Exception) {
-            Log.e(TAG, "Login exception", e)
+            logger.e(TAG, "LOGIN exception: ${e.message}", e)
             Result.failure(Exception("连接失败：${e.localizedMessage ?: "网络错误"}"))
         }
     }
 
     override suspend fun logout() {
+        logger.i(TAG, "LOGOUT: clearing session")
         preferences.clearSession()
         wsClient.disconnect()
     }
 
     override suspend fun getSessions(): Result<List<Session>> {
         return try {
+            logger.i(TAG, "═══ GET SESSIONS START ═══")
+            val t = System.currentTimeMillis()
             val result = rpcClient.call("session", "list", JsonObject())
+            val duration = System.currentTimeMillis() - t
+            logger.i(TAG, "GET SESSIONS: session/list completed in ${duration}ms, result keys: ${result.keySet()}")
+
             // Response: {items: [{sessionId, updatedAt, running, projections: {values: {title, ...}}}, ...]}
             val sessionsJson = result.getAsJsonArray("items")
                 ?: result.getAsJsonArray("sessions")
-                ?: return Result.success(emptyList())
+            if (sessionsJson == null) {
+                logger.w(TAG, "GET SESSIONS: no 'items' or 'sessions' array in response")
+                logger.d(TAG, "GET SESSIONS: full response: ${result.toString().take(1000)}")
+                return Result.success(emptyList())
+            }
+            logger.i(TAG, "GET SESSIONS: found ${sessionsJson.size()} items in array")
 
             val sessions = sessionsJson.mapNotNull { element ->
                 try {
@@ -107,32 +123,38 @@ class DshRepositoryImpl @Inject constructor(
                         turnCount = turnCount
                     )
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to parse session: ${e.message}")
+                    logger.w(TAG, "GET SESSIONS: failed to parse session: ${e.message}")
                     null
                 }
             }
 
-            Log.d(TAG, "Got ${sessions.size} sessions")
+            logger.i(TAG, "GET SESSIONS: parsed ${sessions.size} sessions (filtered from ${sessionsJson.size()} items)")
+            val workspaces = sessions.filter { it.cwd.isNotBlank() }.map { it.cwd }.distinct()
+            logger.d(TAG, "GET SESSIONS: workspaces: $workspaces")
             Result.success(sessions)
         } catch (e: Exception) {
-            Log.e(TAG, "getSessions failed", e)
+            logger.e(TAG, "GET SESSIONS failed: ${e.message}", e)
             Result.failure(Exception("获取会话列表失败：${e.message}"))
         }
     }
 
     override suspend fun createSession(title: String, cwd: String): Result<Session> {
         return try {
+            logger.i(TAG, "═══ CREATE SESSION ═══ title=$title cwd=$cwd")
             val args = JsonObject().apply {
                 if (cwd.isNotBlank()) {
                     addProperty("cwd", cwd)
                 }
             }
-            Log.d(TAG, "createSession: cwd=$cwd")
+            logger.d(TAG, "CREATE SESSION args: ${args}")
+            val t = System.currentTimeMillis()
             val result = rpcClient.call("session", "create", args, wireKey = "request")
+            val duration = System.currentTimeMillis() - t
 
             val sessionId = result.get("sessionId")?.asString
-                ?: throw Exception("No sessionId in response")
+                ?: throw Exception("No sessionId in response: ${result.keySet()}")
 
+            logger.i(TAG, "CREATE SESSION OK (${duration}ms): sessionId=$sessionId, result keys: ${result.keySet()}")
             val session = Session(
                 id = sessionId,
                 title = title.ifBlank { sessionId },
@@ -142,16 +164,18 @@ class DshRepositoryImpl @Inject constructor(
             )
             Result.success(session)
         } catch (e: Exception) {
-            Log.e(TAG, "createSession failed", e)
+            logger.e(TAG, "CREATE SESSION failed: ${e.message}", e)
             Result.failure(Exception("创建会话失败：${e.message}"))
         }
     }
 
     override suspend fun deleteSession(sessionId: String): Result<Unit> {
         return try {
+            logger.i(TAG, "DELETE SESSION: $sessionId")
             rpcClient.call("session", "cancel", JsonObject().apply {
                 addProperty("sessionId", sessionId)
             }, wireKey = "request")
+            logger.i(TAG, "DELETE SESSION OK: $sessionId")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "deleteSession failed", e)
