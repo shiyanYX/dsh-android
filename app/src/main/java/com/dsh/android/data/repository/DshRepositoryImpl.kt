@@ -200,8 +200,8 @@ class DshRepositoryImpl @Inject constructor(
 
     override suspend fun getModels(): Result<List<DshModel>> {
         return try {
-            // modelCatalog has no parameters (parameters: [] in descriptor)
-            val result = rpcClient.call("session", "modelCatalog", JsonObject())
+            // modelCatalog has no parameters (parameters: [] in descriptor) - wireKey must be null
+            val result = rpcClient.call("session", "modelCatalog", JsonObject(), wireKey = null)
             // Response: {groups: [{id, name, models: [{id, name}]}], default: {provider, model}}
             val groups = result.getAsJsonArray("groups") ?: return Result.success(emptyList())
 

@@ -97,11 +97,26 @@ class DshWebSocketClient @Inject constructor(
                     followSession(sessionId)
                 }
 
+                override fun onMessage(webSocket: WebSocket, bytes: okio.ByteString) {
+                    logger.i(TAG, "WS ← BINARY frame: ${bytes.size} bytes, first20=${bytes.substring(0, minOf(20, bytes.size)).hex()}")
+                    // Try to interpret as UTF-8 text
+                    try {
+                        val text = bytes.utf8()
+                        logger.d(TAG, "WS ← binary as text: ${text.take(200)}")
+                        onMessage(webSocket, text)
+                    } catch (e: Exception) {
+                        logger.w(TAG, "WS ← binary not valid UTF-8")
+                    }
+                }
+
                 override fun onMessage(webSocket: WebSocket, text: String) {
                     try {
                         val json = gson.fromJson(text, JsonObject::class.java)
                         val type = json.get("type")?.asString
-                        logger.d(TAG, "WS ← type=$type (${text.length} bytes)")
+                        logger.i(TAG, "WS ← type=$type keys=${json.keySet()} (${text.length} bytes)")
+                        if (type == null) {
+                            logger.w(TAG, "WS ← NULL type! Full message: ${text.take(500)}")
+                        }
 
                         when (type) {
                             "server-response" -> {
@@ -184,11 +199,20 @@ class DshWebSocketClient @Inject constructor(
                 })
             })
         }
-        logger.i(TAG, "WS SEND session/follow rpcId=$rpcId session=$sessionId")
         val jsonStr = gson.toJson(message)
+        logger.i(TAG, "WS SEND session/follow rpcId=$rpcId session=$sessionId (${jsonStr.length} bytes)")
         logger.d(TAG, "WS SEND body: ${jsonStr.take(500)}")
-        val sent = webSocket?.send(jsonStr) ?: false
-        logger.i(TAG, "WS SEND session/follow sent=$sent")
+        val ws = webSocket
+        if (ws == null) {
+            logger.e(TAG, "WS SEND session/follow FAILED: webSocket is null!")
+            return
+        }
+        val sent = ws.send(jsonStr)
+        logger.i(TAG, "WS SEND session/follow sent=$sent (ws=${ws.hashCode()})")
+        if (!sent) {
+            logger.e(TAG, "WS SEND session/follow FAILED! webSocket state unknown. " +
+                "The server may not support WebSocket for this endpoint.")
+        }
     }
 
     /**

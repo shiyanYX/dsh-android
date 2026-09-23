@@ -166,9 +166,9 @@ class DshRpcClient @Inject constructor(
 
     /**
      * Make an RPC call to the DSH server.
-     * @param wireKey the argument wrapper key: "_request" for most endpoints, "request" for prompt/follow/rename
+     * @param wireKey the argument wrapper key: "_request" for most endpoints, "request" for prompt/follow/rename, null for no-arg endpoints
      */
-    suspend fun call(namespace: String, method: String, args: JsonObject = JsonObject(), wireKey: String = "_request"): JsonObject {
+    suspend fun call(namespace: String, method: String, args: JsonObject = JsonObject(), wireKey: String? = "_request"): JsonObject {
         return withContext(Dispatchers.IO) {
             val serverAddress = preferences.serverAddress.first()
                 ?: throw IllegalStateException("Not connected to server")
@@ -182,7 +182,7 @@ class DshRpcClient @Inject constructor(
     /**
      * Call an RPC endpoint and return the raw server response JSON.
      */
-    suspend fun callRaw(namespace: String, method: String, args: JsonObject = JsonObject(), wireKey: String = "_request"): JsonObject {
+    suspend fun callRaw(namespace: String, method: String, args: JsonObject = JsonObject(), wireKey: String? = "_request"): JsonObject {
         return withContext(Dispatchers.IO) {
             val serverAddress = preferences.serverAddress.first()
                 ?: throw IllegalStateException("Not connected to server")
@@ -200,14 +200,20 @@ class DshRpcClient @Inject constructor(
         namespace: String,
         method: String,
         args: JsonObject = JsonObject(),
-        wireKey: String = "_request"
+        wireKey: String? = "_request"
     ): JsonObject {
         val rpcId = UUID.randomUUID().toString()
         val endpoint = "$namespace/$method"
 
         val payload = JsonObject().apply {
             add("args", JsonObject().apply {
-                add(wireKey, args)
+                if (wireKey != null && args.size() > 0) {
+                    add(wireKey, args)
+                } else if (wireKey != null) {
+                    // Even empty args need the wire key for methods that expect it
+                    add(wireKey, JsonObject())
+                }
+                // If wireKey is null, send empty args (for modelCatalog etc.)
             })
         }
         val body = JsonObject().apply {

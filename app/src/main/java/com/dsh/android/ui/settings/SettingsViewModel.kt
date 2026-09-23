@@ -120,6 +120,10 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun clearPendingLogContent() {
+        _uiState.value = _uiState.value.copy(pendingLogContent = null)
+    }
+
     fun startFileLogging() {
         try {
             val file = logger.startFileLogging()

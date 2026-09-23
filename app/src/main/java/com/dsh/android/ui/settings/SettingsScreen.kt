@@ -1,6 +1,9 @@
 package com.dsh.android.ui.settings
 
+import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -12,10 +15,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -27,8 +28,27 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
+
+    // SAF file picker for log export
+    val logExportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/plain")
+    ) { uri ->
+        if (uri != null) {
+            val content = uiState.pendingLogContent
+            if (content != null) {
+                try {
+                    context.contentResolver.openOutputStream(uri)?.use { stream ->
+                        stream.write(content.toByteArray(Charsets.UTF_8))
+                    }
+                    Toast.makeText(context, "✅ 日志已保存", Toast.LENGTH_SHORT).show()
+                    viewModel.clearPendingLogContent()
+                } catch (e: Exception) {
+                    Toast.makeText(context, "❌ 保存失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     LaunchedEffect(uiState.isConnected) {
         if (!uiState.isConnected) {
@@ -177,19 +197,27 @@ fun SettingsScreen(
                         onClick = { viewModel.exportLogBuffer() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("📋 复制最近日志到剪贴板")
+                        Text("📋 准备日志")
                     }
 
                     if (uiState.pendingLogContent != null) {
                         Spacer(modifier = Modifier.height(8.dp))
+                        val logSize = uiState.pendingLogContent!!.length
+                        val logLines = uiState.pendingLogContent!!.lines().size
+                        Text(
+                            text = "已准备: $logLines 行, ${logSize} 字符",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        // SAF: let user choose save location
                         Button(
                             onClick = {
-                                clipboardManager.setText(AnnotatedString(uiState.pendingLogContent!!))
-                                Toast.makeText(context, "日志已复制到剪贴板", Toast.LENGTH_SHORT).show()
+                                logExportLauncher.launch("dsh_log_${System.currentTimeMillis()}.txt")
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("✅ 点击复制（${uiState.pendingLogContent!!.length} 字符）")
+                            Text("💾 选择位置保存日志文件")
                         }
                     }
 
