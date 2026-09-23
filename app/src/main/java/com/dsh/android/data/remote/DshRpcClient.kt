@@ -142,29 +142,30 @@ class DshRpcClient @Inject constructor(
 
     /**
      * Make an RPC call to the DSH server.
+     * @param wireKey the argument wrapper key: "_request" for most endpoints, "request" for prompt/follow/rename
      */
-    suspend fun call(namespace: String, method: String, args: JsonObject = JsonObject()): JsonObject {
+    suspend fun call(namespace: String, method: String, args: JsonObject = JsonObject(), wireKey: String = "_request"): JsonObject {
         return withContext(Dispatchers.IO) {
             val serverAddress = preferences.serverAddress.first()
                 ?: throw IllegalStateException("Not connected to server")
             val wuaSession = preferences.sessionToken.first()
                 ?: throw IllegalStateException("Not authenticated")
             val coreCookie = preferences.coreCookie.first()
-            executeCallRaw(serverAddress, wuaSession, coreCookie, namespace, method, args)
+            executeCallRaw(serverAddress, wuaSession, coreCookie, namespace, method, args, wireKey)
         }
     }
 
     /**
      * Call an RPC endpoint and return the raw server response JSON.
      */
-    suspend fun callRaw(namespace: String, method: String, args: JsonObject = JsonObject()): JsonObject {
+    suspend fun callRaw(namespace: String, method: String, args: JsonObject = JsonObject(), wireKey: String = "_request"): JsonObject {
         return withContext(Dispatchers.IO) {
             val serverAddress = preferences.serverAddress.first()
                 ?: throw IllegalStateException("Not connected to server")
             val wuaSession = preferences.sessionToken.first()
                 ?: throw IllegalStateException("Not authenticated")
             val coreCookie = preferences.coreCookie.first()
-            executeCallRaw(serverAddress, wuaSession, coreCookie, namespace, method, args)
+            executeCallRaw(serverAddress, wuaSession, coreCookie, namespace, method, args, wireKey)
         }
     }
 
@@ -174,14 +175,15 @@ class DshRpcClient @Inject constructor(
         coreCookie: String?,
         namespace: String,
         method: String,
-        args: JsonObject = JsonObject()
+        args: JsonObject = JsonObject(),
+        wireKey: String = "_request"
     ): JsonObject {
         val rpcId = UUID.randomUUID().toString()
         val endpoint = "$namespace/$method"
 
         val payload = JsonObject().apply {
             add("args", JsonObject().apply {
-                add("_request", args)
+                add(wireKey, args)
             })
         }
         val body = JsonObject().apply {

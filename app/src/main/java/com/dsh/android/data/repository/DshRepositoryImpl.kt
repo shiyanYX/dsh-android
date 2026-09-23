@@ -147,7 +147,7 @@ class DshRepositoryImpl @Inject constructor(
         return try {
             rpcClient.call("session", "cancel", JsonObject().apply {
                 addProperty("sessionId", sessionId)
-            })
+            }, wireKey = "request")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "deleteSession failed", e)
