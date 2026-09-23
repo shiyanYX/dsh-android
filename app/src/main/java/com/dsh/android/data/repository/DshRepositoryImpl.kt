@@ -124,7 +124,7 @@ class DshRepositoryImpl @Inject constructor(
             val args = JsonObject().apply {
                 addProperty("path", "")
             }
-            val result = rpcClient.call("session", "create", args)
+            val result = rpcClient.call("session", "create", args, wireKey = "request")
 
             val sessionId = result.get("sessionId")?.asString
                 ?: throw Exception("No sessionId in response")
@@ -172,32 +172,32 @@ class DshRepositoryImpl @Inject constructor(
 
     override suspend fun getModels(): Result<List<DshModel>> {
         return try {
+            // modelCatalog has no parameters (parameters: [] in descriptor)
             val result = rpcClient.call("session", "modelCatalog", JsonObject())
-            // The model catalog response structure: {"adapters":[...]}
-            val adapters = result.getAsJsonArray("adapters") ?: return Result.success(emptyList())
+            // Response: {groups: [{id, name, models: [{id, name}]}], default: {provider, model}}
+            val groups = result.getAsJsonArray("groups") ?: return Result.success(emptyList())
 
             val models = mutableListOf<DshModel>()
-            for (adapter in adapters) {
-                val adapterObj = adapter.asJsonObject
-                val adapterId = adapterObj.get("id")?.asString ?: continue
-                val modelsArray = adapterObj.getAsJsonArray("models") ?: continue
+            for (group in groups) {
+                val groupObj = group.asJsonObject
+                val groupId = groupObj.get("id")?.asString ?: continue
+                val groupName = groupObj.get("name")?.asString ?: groupId
+                val modelsArray = groupObj.getAsJsonArray("models") ?: continue
 
                 for (modelElement in modelsArray) {
                     val modelObj = modelElement.asJsonObject
                     val modelId = modelObj.get("id")?.asString ?: continue
-                    val displayName = modelObj.get("displayName")?.asString
-                        ?: modelObj.get("name")?.asString
-                        ?: modelId
+                    val displayName = modelObj.get("name")?.asString ?: modelId
 
                     models.add(DshModel(
-                        id = "$adapterId/$modelId",
-                        name = displayName,
+                        id = "$groupId/$modelId",
+                        name = "$displayName ($groupName)",
                         isAvailable = true
                     ))
                 }
             }
 
-            Log.d(TAG, "Got ${models.size} models from ${adapters.size()} adapters")
+            Log.d(TAG, "Got ${models.size} models from ${groups.size()} groups")
             Result.success(models)
         } catch (e: Exception) {
             Log.e(TAG, "getModels failed", e)
