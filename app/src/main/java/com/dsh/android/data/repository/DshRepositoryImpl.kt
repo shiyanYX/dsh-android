@@ -119,11 +119,14 @@ class DshRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createSession(title: String): Result<Session> {
+    override suspend fun createSession(title: String, cwd: String): Result<Session> {
         return try {
             val args = JsonObject().apply {
-                addProperty("path", "")
+                if (cwd.isNotBlank()) {
+                    addProperty("cwd", cwd)
+                }
             }
+            Log.d(TAG, "createSession: cwd=$cwd")
             val result = rpcClient.call("session", "create", args, wireKey = "request")
 
             val sessionId = result.get("sessionId")?.asString
@@ -207,21 +210,27 @@ class DshRepositoryImpl @Inject constructor(
 
     override suspend fun getSessionHistory(sessionId: String, maxMessages: Int): Result<List<Message>> {
         return try {
-            // First get a high throughSeq from the session list
+            // Step 1: Get throughSeq from session list
+            Log.d(TAG, "getSessionHistory: fetching session list for $sessionId")
             val listResult = rpcClient.call("session", "list", JsonObject())
-            val items = listResult.getAsJsonArray("items") ?: return Result.success(emptyList())
+            val items = listResult.getAsJsonArray("items")
+                ?: return Result.failure(Exception("会话列表为空"))
             var throughSeq = 0
             for (item in items) {
                 val obj = item.asJsonObject
                 if (obj.get("sessionId")?.asString == sessionId) {
                     throughSeq = obj.getAsJsonObject("projections")
                         ?.get("asOfSeq")?.asInt ?: 0
+                    Log.d(TAG, "getSessionHistory: found session, throughSeq=$throughSeq")
                     break
                 }
             }
-            if (throughSeq == 0) return Result.success(emptyList())
+            if (throughSeq == 0) {
+                Log.w(TAG, "getSessionHistory: session $sessionId not found or asOfSeq=0")
+                return Result.failure(Exception("会话未找到"))
+            }
 
-            // Load page of events via HTTP (session/page is non-streaming)
+            // Step 2: Load page of events via HTTP (session/page is non-streaming)
             val args = JsonObject().apply {
                 add("address", JsonObject().apply {
                     addProperty("kind", "session")
@@ -230,8 +239,12 @@ class DshRepositoryImpl @Inject constructor(
                 addProperty("throughSeq", throughSeq)
                 addProperty("maxMessages", maxMessages)
             }
+            Log.d(TAG, "getSessionHistory: calling session/page with maxMessages=$maxMessages")
             val result = rpcClient.call("session", "page", args, wireKey = "request")
-            val records = result.getAsJsonArray("records") ?: return Result.success(emptyList())
+            val records = result.getAsJsonArray("records")
+                ?: return Result.failure(Exception("消息记录为空"))
+
+            Log.d(TAG, "getSessionHistory: got ${records.size()} records")
 
             val messages = mutableListOf<Message>()
             var currentAssistantContent = StringBuilder()

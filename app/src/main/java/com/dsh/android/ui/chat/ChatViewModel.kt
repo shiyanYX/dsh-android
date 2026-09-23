@@ -56,20 +56,32 @@ class ChatViewModel @Inject constructor(
 
     private fun loadHistory(sessionId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            val result = repository.getSessionHistory(sessionId, maxMessages = 200)
-            result.fold(
-                onSuccess = { messages ->
-                    _uiState.value = _uiState.value.copy(
-                        messages = messages,
-                        isLoading = false
-                    )
-                },
-                onFailure = { e ->
-                    Log.w("ChatVM", "Failed to load history: ${e.message}")
-                    _uiState.value = _uiState.value.copy(isLoading = false)
-                }
-            )
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            try {
+                val result = repository.getSessionHistory(sessionId, maxMessages = 200)
+                result.fold(
+                    onSuccess = { messages ->
+                        Log.d("ChatVM", "Loaded ${messages.size} messages")
+                        _uiState.value = _uiState.value.copy(
+                            messages = messages,
+                            isLoading = false
+                        )
+                    },
+                    onFailure = { e ->
+                        Log.e("ChatVM", "Failed to load history: ${e.message}", e)
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = "加载历史失败: ${e.message}"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("ChatVM", "Exception loading history: ${e.message}", e)
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "加载历史异常: ${e.message}"
+                )
+            }
         }
     }
 

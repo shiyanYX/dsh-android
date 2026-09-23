@@ -30,7 +30,10 @@ data class SessionListUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val searchQuery: String = "",
-    val showSubagents: Boolean = false // false = hide subagent sessions
+    val showSubagents: Boolean = false, // false = hide subagent sessions
+    val showCreateDialog: Boolean = false,
+    val availableWorkspaces: List<String> = emptyList(), // known workspace paths
+    val selectedWorkspace: String = "" // selected workspace for new session
 )
 
 @HiltViewModel
@@ -57,9 +60,16 @@ class SessionListViewModel @Inject constructor(
                         sessions.filter { !it.isSubagent }
                     }
                     val groups = groupByWorkspace(filtered)
+                    // Collect unique workspace paths for the create dialog
+                    val workspaces = sessions
+                        .filter { it.cwd.isNotBlank() && !it.isSubagent }
+                        .map { it.cwd }
+                        .distinct()
+                        .sorted()
                     _uiState.value = _uiState.value.copy(
                         sessions = sessions,
                         workspaceGroups = groups,
+                        availableWorkspaces = workspaces,
                         isLoading = false
                     )
                 },
@@ -120,11 +130,30 @@ class SessionListViewModel @Inject constructor(
             }
     }
 
+    fun showCreateDialog() {
+        _uiState.value = _uiState.value.copy(
+            showCreateDialog = true,
+            selectedWorkspace = _uiState.value.availableWorkspaces.firstOrNull() ?: ""
+        )
+    }
+
+    fun hideCreateDialog() {
+        _uiState.value = _uiState.value.copy(showCreateDialog = false)
+    }
+
+    fun selectWorkspace(path: String) {
+        _uiState.value = _uiState.value.copy(selectedWorkspace = path)
+    }
+
     fun createSession() {
         viewModelScope.launch {
-            val result = repository.createSession("New Session")
+            val cwd = _uiState.value.selectedWorkspace
+            val result = repository.createSession("New Session", cwd)
             result.fold(
-                onSuccess = { loadSessions() },
+                onSuccess = {
+                    _uiState.value = _uiState.value.copy(showCreateDialog = false)
+                    loadSessions()
+                },
                 onFailure = { e ->
                     _uiState.value = _uiState.value.copy(error = e.message)
                 }

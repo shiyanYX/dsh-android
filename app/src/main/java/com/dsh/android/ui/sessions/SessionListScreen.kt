@@ -60,11 +60,21 @@ fun SessionListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = viewModel::createSession) {
+            FloatingActionButton(onClick = viewModel::showCreateDialog) {
                 Icon(Icons.Default.Add, contentDescription = "新建会话")
             }
         }
     ) { padding ->
+        // Create session dialog
+        if (uiState.showCreateDialog) {
+            CreateSessionDialog(
+                workspaces = uiState.availableWorkspaces,
+                selectedWorkspace = uiState.selectedWorkspace,
+                onSelectWorkspace = viewModel::selectWorkspace,
+                onConfirm = viewModel::createSession,
+                onDismiss = viewModel::hideCreateDialog
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -303,4 +313,105 @@ fun SessionItem(
 private fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("MM/dd HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
+}
+
+@Composable
+fun CreateSessionDialog(
+    workspaces: List<String>,
+    selectedWorkspace: String,
+    onSelectWorkspace: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var customPath by remember { mutableStateOf("") }
+    var useCustom by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("新建会话") },
+        text = {
+            Column {
+                Text(
+                    "选择工作区目录：",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                if (workspaces.isNotEmpty()) {
+                    workspaces.forEach { path ->
+                        val shortName = path.split("/").lastOrNull() ?: path
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = !useCustom && selectedWorkspace == path,
+                                onClick = {
+                                    useCustom = false
+                                    onSelectWorkspace(path)
+                                }
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = shortName,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = path,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Custom path option
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = useCustom,
+                        onClick = {
+                            useCustom = true
+                            onSelectWorkspace(customPath)
+                        }
+                    )
+                    Text("自定义路径", style = MaterialTheme.typography.bodyMedium)
+                }
+
+                if (useCustom) {
+                    OutlinedTextField(
+                        value = customPath,
+                        onValueChange = {
+                            customPath = it
+                            onSelectWorkspace(it)
+                        },
+                        label = { Text("目录路径") },
+                        placeholder = { Text("/home/user/project") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = selectedWorkspace.isNotBlank()
+            ) {
+                Text("创建")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }

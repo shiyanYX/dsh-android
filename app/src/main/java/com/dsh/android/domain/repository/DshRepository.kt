@@ -10,7 +10,7 @@ interface DshRepository {
     suspend fun login(serverAddress: String, username: String, password: String): Result<Unit>
     suspend fun logout()
     suspend fun getSessions(): Result<List<Session>>
-    suspend fun createSession(title: String): Result<Session>
+    suspend fun createSession(title: String, cwd: String = ""): Result<Session>
     suspend fun deleteSession(sessionId: String): Result<Unit>
     suspend fun searchSessions(query: String): Result<List<Session>>
     suspend fun getModels(): Result<List<DshModel>>
